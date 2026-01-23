@@ -382,7 +382,7 @@ export const getPostByUrl = async (url: string): Promise<WpPost | null> => {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, { headers: getHeaders() });
     if (!res.ok) return null;
     
-    let data = await res.json();
+    const data = await res.json();
     
     // kg/v1 returns single object for slug lookup, wp/v2 returns array
     if (useKgApi) {
