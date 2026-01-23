@@ -297,7 +297,10 @@ export const searchContent = async (
     useKgApi = true;
   }
 
-  // For kg/v1 endpoints, use different query parameter
+  // For kg/v1 endpoints, use query parameter based on API design:
+  // - Recipes use 'search' parameter: /kg/v1/recipes?search={query}
+  // - Ingredients use 'q' parameter: /kg/v1/ingredients/search?q={query}
+  // This reflects the backend API implementation
   const queryParam = useKgApi && type === 'ingredients' ? 'q' : 'search';
   const embedParam = useKgApi ? '' : '&_embed'; // kg/v1 doesn't need _embed
   const url = `${API_BASE_URL}${endpoint}?${queryParam}=${encodeURIComponent(query)}${embedParam}&per_page=10`;
