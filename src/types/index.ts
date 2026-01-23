@@ -4,6 +4,7 @@ export interface WpPost {
   date: string;
   slug: string;
   type: string; // 'post', 'recipe', 'ingredient' vb.
+  author?: number; // Yazar ID'si
   title: { rendered: string };
   content: { rendered: string };
   excerpt: { rendered: string };
