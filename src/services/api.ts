@@ -315,11 +315,11 @@ export const searchContent = async (
     if (useKgApi) {
       if (type === 'recipes') {
         // kg/v1/recipes returns { recipes: [...], total, page, per_page, total_pages }
-        const recipesArray = Array.isArray(data) ? data : (data.recipes || []);
+        const recipesArray = Array.isArray(data) ? data : (data?.recipes || []);
         data = recipesArray.map((item: KgRecipeResponse) => mapKgRecipeToWpPost(item));
       } else if (type === 'ingredients') {
         // kg/v1/ingredients/search might return array directly or { ingredients: [...] }
-        const ingredientsArray = Array.isArray(data) ? data : (data.ingredients || []);
+        const ingredientsArray = Array.isArray(data) ? data : (data?.ingredients || []);
         data = ingredientsArray.map((item: KgIngredientResponse) => mapKgIngredientToWpPost(item));
       }
     } else {
