@@ -29,9 +29,9 @@ export default function SearchPanel({ onSelect }: SearchPanelProps) {
 
   // Sonuçları post type'a göre grupla
   const groupedResults: GroupedResults = {
-    recipes: results.filter(p => p.type === 'recipes'),
-    ingredients: results.filter(p => p.type === 'ingredients'),
-    posts: results.filter(p => p.type === 'post'),
+    recipes: results.filter(p => p.type === 'recipes' || p.type === 'recipe'),
+    ingredients: results.filter(p => p.type === 'ingredients' || p.type === 'ingredient'),
+    posts: results.filter(p => p.type === 'post' || p.type === 'posts'),
   };
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -88,7 +88,7 @@ export default function SearchPanel({ onSelect }: SearchPanelProps) {
       {/* Input Mode Seçici */}
       <div className="flex gap-2">
         <button
-          onClick={() => { setInputMode('search'); setError(''); setResults([]);  }}
+          onClick={() => { setInputMode('search'); setError(''); setResults([]); }}
           className={`flex-1 text-xs py-2 rounded flex items-center justify-center gap-1.5 transition-colors ${inputMode === 'search' ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400'}`}
         >
           <Search size={12} /> Arama
