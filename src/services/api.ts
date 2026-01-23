@@ -314,9 +314,13 @@ export const searchContent = async (
     // If using kg/v1 API, convert to WpPost format
     if (useKgApi) {
       if (type === 'recipes') {
-        data = data.map((item: KgRecipeResponse) => mapKgRecipeToWpPost(item));
+        // kg/v1/recipes returns { recipes: [...], total, page, per_page, total_pages }
+        const recipesArray = Array.isArray(data) ? data : (data.recipes || []);
+        data = recipesArray.map((item: KgRecipeResponse) => mapKgRecipeToWpPost(item));
       } else if (type === 'ingredients') {
-        data = data.map((item: KgIngredientResponse) => mapKgIngredientToWpPost(item));
+        // kg/v1/ingredients/search might return array directly or { ingredients: [...] }
+        const ingredientsArray = Array.isArray(data) ? data : (data.ingredients || []);
+        data = ingredientsArray.map((item: KgIngredientResponse) => mapKgIngredientToWpPost(item));
       }
     } else {
       // For wp/v2 API, hydrate the data
