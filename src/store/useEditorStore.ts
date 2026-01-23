@@ -86,9 +86,19 @@ export const useEditorStore = create<EditorState>()(
       name: 'kg-studio-editor',
       partialize: (state) => ({ 
         format: state.format,
-        // Sadece watermark ayarlarını persist et
-        watermarkSettings: state.data.watermark 
+        watermark: state.data.watermark 
       }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<EditorState & { watermark: TemplateData['watermark'] }>;
+        return {
+          ...currentState,
+          format: persisted.format || currentState.format,
+          data: {
+            ...currentState.data,
+            watermark: persisted.watermark || currentState.data.watermark
+          }
+        };
+      },
     }
   )
 );

@@ -92,17 +92,29 @@ export const seasonIcons: Record<string, string> = {
 
 // Yardımcı Fonksiyonlar
 export const getAgeGroupColor = (ageGroup: string): string => {
-  return colors.ageGroup[ageGroup as keyof typeof colors.ageGroup] || colors.brand.primary;
+  if (ageGroup in colors.ageGroup) {
+    return colors.ageGroup[ageGroup as keyof typeof colors.ageGroup];
+  }
+  return colors.brand.primary;
 };
 
 export const getAllergyRiskColor = (risk: string): string => {
-  return colors.allergyRisk[risk as keyof typeof colors.allergyRisk] || colors.allergyRisk['Düşük'];
+  if (risk in colors.allergyRisk) {
+    return colors.allergyRisk[risk as keyof typeof colors.allergyRisk];
+  }
+  return colors.allergyRisk['Düşük'];
 };
 
 export const getSeasonIcon = (season: string): string => {
-  return seasonIcons[season] || '🌍';
+  if (season in seasonIcons) {
+    return seasonIcons[season];
+  }
+  return '🌍';
 };
 
 export const getSeasonColor = (season: string): string => {
-  return colors.season[season as keyof typeof colors.season] || colors.brand.secondary;
+  if (season in colors.season) {
+    return colors.season[season as keyof typeof colors.season];
+  }
+  return colors.brand.secondary;
 };
