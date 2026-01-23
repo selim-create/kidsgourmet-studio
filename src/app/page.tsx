@@ -13,8 +13,9 @@ import { toPng } from 'html-to-image';
 import { 
   Download, RefreshCcw, Instagram, Image as ImageIcon, 
   Search, Type, Upload, LogOut, LayoutTemplate, Palette, BookOpen, 
-  ChefHat, FileText, RotateCcw, ImagePlus
+  ChefHat, FileText, RotateCcw, ImagePlus, Layers
 } from 'lucide-react';
+import Link from 'next/link';
 import { STORAGE_KEYS, WATERMARK_POSITIONS, DEFAULTS } from '@/lib/constants';
 
 
@@ -135,6 +136,16 @@ export default function Home() {
           <NavIcon icon={<ImagePlus />} label="Görsel" active={activeTab === 'library'} onClick={() => setActiveTab('library')} />
           <NavIcon icon={<Type />} label="İçerik" active={activeTab === 'edit'} onClick={() => setActiveTab('edit')} />
           <NavIcon icon={<Palette />} label="Tasarım" active={activeTab === 'design'} onClick={() => setActiveTab('design')} />
+          
+          {/* Templates Link */}
+          <Link 
+            href="/templates"
+            className="w-full aspect-square flex flex-col items-center justify-center gap-1.5 rounded-xl transition-all text-gray-500 hover:bg-white/5 hover:text-[#FF7F3F] group"
+            title="Şablonlar"
+          >
+            <Layers size={20} className="group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-bold tracking-wide">Şablonlar</span>
+          </Link>
         </div>
 
         <div className="mt-auto w-full px-2 space-y-2">

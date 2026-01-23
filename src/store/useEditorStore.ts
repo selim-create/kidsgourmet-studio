@@ -8,12 +8,18 @@ interface EditorState {
   data: TemplateData;
   format: SocialFormat;
   
+  // Template Selection
+  selectedTemplate: string | null;
+  selectedLayout: string;
+  
   // Actions
   setData: (data: Partial<TemplateData>) => void;
   setFormat: (format: SocialFormat) => void;
   setWatermark: (watermark: Partial<TemplateData['watermark']>) => void;
   resetData: () => void;
   loadFromPost: (data: TemplateData) => void;
+  setSelectedTemplate: (templateId: string | null) => void;
+  setSelectedLayout: (layout: string) => void;
 }
 
 const DEFAULT_DATA: TemplateData = {
@@ -59,6 +65,8 @@ export const useEditorStore = create<EditorState>()(
     (set) => ({
       data: DEFAULT_DATA,
       format: 'story',
+      selectedTemplate: null,
+      selectedLayout: 'modern',
       
       setData: (newData) => set((state) => ({
         data: { ...state.data, ...newData }
@@ -81,18 +89,26 @@ export const useEditorStore = create<EditorState>()(
           watermark: state.data.watermark // Watermark ayarlarını koru
         }
       })),
+
+      setSelectedTemplate: (templateId) => set({ selectedTemplate: templateId }),
+      
+      setSelectedLayout: (layout) => set({ selectedLayout: layout }),
     }),
     {
       name: 'kg-studio-editor',
       partialize: (state) => ({ 
         format: state.format,
-        watermark: state.data.watermark 
+        watermark: state.data.watermark,
+        selectedLayout: state.selectedLayout,
+        selectedTemplate: state.selectedTemplate
       }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<EditorState & { watermark: TemplateData['watermark'] }>;
         return {
           ...currentState,
           format: persisted.format || currentState.format,
+          selectedLayout: persisted.selectedLayout || currentState.selectedLayout,
+          selectedTemplate: persisted.selectedTemplate || currentState.selectedTemplate,
           data: {
             ...currentState.data,
             watermark: persisted.watermark || currentState.data.watermark

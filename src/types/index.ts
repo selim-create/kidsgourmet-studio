@@ -123,3 +123,76 @@ export interface TemplateData {
 
   theme: 'modern' | 'dark' | 'colorful';
 }
+
+// Template Layout Types
+export type TemplateLayout = 
+  | 'modern'      // Tam ekran görsel, gradient overlay, alt kısımda bilgiler
+  | 'classic'     // Üstte header, ortada görsel, altta detaylar
+  | 'minimal'     // Sadece başlık ve kategori rozeti
+  | 'detailed'    // Tüm bilgiler grid düzeninde
+  | 'info'        // Bilgi kartı stili (malzemeler için)
+  | 'warning'     // Uyarı stili (alerjenler için)
+  | 'featured'    // Büyük başlık, öne çıkan görsel
+  | 'quote'       // Alıntı/özet odaklı
+  | 'simple';     // Basit layout
+
+// Template Feature Types
+export type TemplateFeature = 
+  | 'ageGroupBadge'
+  | 'mealTypeBadge'
+  | 'ingredientsList'
+  | 'prepTime'
+  | 'expertCard'
+  | 'authorCard'
+  | 'categoryBadge'
+  | 'excerpt'
+  | 'seasonBadge'
+  | 'allergenWarning'
+  | 'allergyRisk'
+  | 'startAge'
+  | 'benefits';
+
+// Template Definition Interface
+export interface Template {
+  id: string;
+  name: string;
+  description: string;
+  previewImage: string;
+  templateType: TemplateType;
+  format: SocialFormat;
+  layout: TemplateLayout;
+  features: TemplateFeature[];
+  tags: string[];
+}
+
+// Template Card Props Interface
+export interface TemplateCardProps {
+  id: string;
+  name: string;
+  description: string;
+  previewImage: string;
+  templateType: TemplateType;
+  format: SocialFormat;
+  tags: string[];
+  onSelect: () => void;
+}
+
+// Expert Card Props Interface
+export interface ExpertCardProps {
+  name: string;
+  title: string;
+  avatarUrl?: string;
+  note?: string;
+  isVerified?: boolean;
+  isVisible: boolean;
+  onToggleVisibility: () => void;
+  variant?: 'compact' | 'full';
+}
+
+// Author Card Props Interface
+export interface AuthorCardProps {
+  name: string;
+  avatarUrl?: string;
+  isVisible: boolean;
+  onToggleVisibility: () => void;
+}
