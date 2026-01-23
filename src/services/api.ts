@@ -250,8 +250,13 @@ const hydratePostData = async (posts: WpPost[]): Promise<WpPost[]> => {
           }
         });
         
-        // wp:term formatında düzenle
-        const termArrays = Object.values(groupedTerms);
+        // wp:term formatında düzenle - taxonomy'si olan terimleri kullan
+        const termArrays = Object.values(groupedTerms).map(group => 
+          group.map(term => ({
+            ...term,
+            taxonomy: term.taxonomy as string // taxonomy zorunlu
+          }))
+        );
         updatedPost = {
           ...updatedPost,
           _embedded: {
