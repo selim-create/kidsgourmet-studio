@@ -1,43 +1,34 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import SocialCard from '@/components/SocialCard';
 import SearchPanel from '@/components/SearchPanel';
+import { useEditorStore, useSettingsStore } from '@/store';
 import { mapWpPostToTemplate } from '@/lib/utils';
-import { TemplateData, SocialFormat, WatermarkPosition, WpPost } from '@/types';
+import { getDefaultWatermark } from '@/services/api';
+import { WpPost, WatermarkPosition } from '@/types';
 import { toPng } from 'html-to-image';
 import { 
   Download, RefreshCcw, Instagram, Image as ImageIcon, 
-  Search, Type, Upload, LogOut, LayoutTemplate, Palette, BookOpen, ChefHat, FileText, ImagePlus
+  Search, Type, Upload, LogOut, LayoutTemplate, Palette, BookOpen, 
+  ChefHat, FileText, RotateCcw
 } from 'lucide-react';
-import { STORAGE_KEYS } from '@/lib/constants';
+import { STORAGE_KEYS, WATERMARK_POSITIONS, DEFAULTS } from '@/lib/constants';
 
-// --- Default Data ---
-const DEFAULT_DATA: TemplateData = {
-  id: 'init',
-  templateType: 'recipe',
-  title: 'İçerik Başlığı',
-  image: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af',
-  category: 'Kategori',
-  ingredients: ['Malzeme 1', 'Malzeme 2'],
-  excerpt: 'İçerik özeti buraya gelecek.',
-  author: { name: 'KidsGourmet', avatarUrl: '', isVisible: true },
-  expert: { name: 'Dyt. Uzman Adı', title: 'Beslenme Uzmanı', isVisible: true, isVerified: true },
-  watermark: { isVisible: true, url: '', position: 'top-right', opacity: 1, scale: 1 },
-  theme: 'modern'
-};
 
 export default function Home() {
   const router = useRouter();
   const cardRef = useRef<HTMLDivElement>(null);
   
-  // State
-  const [activeTab, setActiveTab] = useState<'search' | 'edit' | 'design'>('search');
-  const [data, setData] = useState<TemplateData>(DEFAULT_DATA);
-  const [format, setFormat] = useState<SocialFormat>('story');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Zustand Stores
+  const { data, format, setData, setFormat, setWatermark, resetData, loadFromPost } = useEditorStore();
+  const { defaultWatermarkUrl, setDefaultWatermark } = useSettingsStore();
+  
+  // Local State (UI only)
+  const [activeTab, setActiveTab] = React.useState<'search' | 'edit' | 'design'>('search');
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
 
   // 1. Auth Kontrolü
   useEffect(() => {
@@ -49,51 +40,71 @@ export default function Home() {
     }
   }, [router]);
 
-  // 2. Arama Seçimi
+  // 2. Varsayılan Watermark'ı Yükle
+  useEffect(() => {
+    const loadDefaultWatermark = async () => {
+      if (!defaultWatermarkUrl) {
+        const url = await getDefaultWatermark();
+        setDefaultWatermark(url);
+      }
+    };
+    loadDefaultWatermark();
+  }, [defaultWatermarkUrl, setDefaultWatermark]);
+
+  // 3. Arama Seçimi - Zustand kullan
   const handleContentSelect = (post: WpPost) => {
     const mapped = mapWpPostToTemplate(post);
     if (!mapped.image) {
-       mapped.image = 'https://images.unsplash.com/photo-1490818387583-1baba5e638af';
+      mapped.image = DEFAULTS.PLACEHOLDER_IMAGE;
     }
-    setData(prev => ({ ...mapped, watermark: prev.watermark }));
-    setActiveTab('edit'); 
+    loadFromPost(mapped);
+    setActiveTab('edit');
   };
 
-  // 3. Görsel Yükleme
+  // 4. Görsel Yükleme
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      setData(prev => ({ ...prev, image: url }));
+      setData({ image: url });
     }
   };
 
-  // 4. Filigran Yükleme
+  // 5. Filigran Yükleme
   const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      setData(prev => ({ 
-        ...prev, 
-        watermark: { ...prev.watermark, url: url, isVisible: true } 
-      }));
+      setWatermark({ url, isVisible: true });
     }
   };
 
-  // 5. İndirme
+  // 6. Varsayılan Watermark'ı Kullan
+  const handleUseDefaultWatermark = () => {
+    setWatermark({ url: defaultWatermarkUrl || DEFAULTS.WATERMARK_URL, isVisible: true });
+  };
+
+  // 7. İndirme
   const handleDownload = useCallback(() => {
     if (!cardRef.current) return;
     setIsGenerating(true);
     toPng(cardRef.current, { cacheBust: true, pixelRatio: 2 })
       .then((dataUrl) => {
         const link = document.createElement('a');
-        link.download = `KG-${data.templateType}-${Date.now()}.png`;
+        link.download = `KG-${data.templateType}-${format}-${Date.now()}.png`;
         link.href = dataUrl;
         link.click();
         setIsGenerating(false);
       })
       .catch(() => setIsGenerating(false));
-  }, []);
+  }, [data.templateType, format]);
+
+  // 8. Reset
+  const handleReset = () => {
+    if (confirm('Tüm değişiklikler sıfırlanacak. Emin misiniz?')) {
+      resetData();
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
@@ -101,6 +112,9 @@ export default function Home() {
   };
 
   if (!isAuthenticated) return null;
+
+  // Watermark URL (özel veya varsayılan)
+  const effectiveWatermarkUrl = data.watermark.url || defaultWatermarkUrl || DEFAULTS.WATERMARK_URL;
 
   return (
     <main className="h-screen bg-[#121212] flex overflow-hidden text-gray-100 font-sans">
@@ -115,8 +129,17 @@ export default function Home() {
           <NavIcon icon={<Palette />} label="Tasarım" active={activeTab === 'design'} onClick={() => setActiveTab('design')} />
         </div>
 
-        <div className="mt-auto w-full px-2">
-           <button onClick={handleLogout} className="w-full p-3 text-gray-500 hover:text-red-500 hover:bg-white/5 rounded-xl transition-all flex flex-col items-center gap-1 group" title="Çıkış Yap">
+        <div className="mt-auto w-full px-2 space-y-2">
+          <button 
+            onClick={handleReset} 
+            className="w-full p-3 text-gray-500 hover:text-yellow-500 hover:bg-white/5 rounded-xl transition-all flex flex-col items-center gap-1 group" 
+            title="Sıfırla"
+          >
+            <RotateCcw size={20} className="group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-medium">Sıfırla</span>
+          </button>
+          
+          <button onClick={handleLogout} className="w-full p-3 text-gray-500 hover:text-red-500 hover:bg-white/5 rounded-xl transition-all flex flex-col items-center gap-1 group" title="Çıkış Yap">
              <LogOut size={20} className="group-hover:scale-110 transition-transform" />
              <span className="text-[9px] font-medium">Çıkış</span>
            </button>
@@ -147,13 +170,13 @@ export default function Home() {
                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block ml-1">Şablon Türü</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'recipe', label: 'Tarif', icon: <ChefHat size={16}/> },
-                    { id: 'blog', label: 'Blog', icon: <FileText size={16}/> },
-                    { id: 'guide', label: 'Rehber', icon: <BookOpen size={16}/> }
+                    { id: 'recipe' as const, label: 'Tarif', icon: <ChefHat size={16}/> },
+                    { id: 'blog' as const, label: 'Blog', icon: <FileText size={16}/> },
+                    { id: 'guide' as const, label: 'Rehber', icon: <BookOpen size={16}/> }
                   ].map(type => (
                     <button 
                       key={type.id}
-                      onClick={() => setData({ ...data, templateType: type.id as any })}
+                      onClick={() => setData({ templateType: type.id })}
                       className={`flex flex-col items-center justify-center gap-2 py-3 rounded-xl border transition-all ${data.templateType === type.id ? 'bg-[#FF7F3F]/10 border-[#FF7F3F] text-[#FF7F3F]' : 'bg-white/5 border-transparent text-gray-400 hover:bg-white/10'}`}
                     >
                       {type.icon}
@@ -167,13 +190,13 @@ export default function Home() {
                 <textarea 
                   rows={3} 
                   value={data.title} 
-                  onChange={e => setData({...data, title: e.target.value})}
+                  onChange={e => setData({ title: e.target.value })}
                   className="modern-input"
                 />
               </InputGroup>
 
               <InputGroup label="Kategori">
-                 <input type="text" value={data.category} onChange={e => setData({...data, category: e.target.value})} className="modern-input"/>
+                 <input type="text" value={data.category} onChange={e => setData({ category: e.target.value })} className="modern-input"/>
               </InputGroup>
 
               {data.templateType === 'recipe' && (
@@ -181,7 +204,7 @@ export default function Home() {
                   <textarea 
                     rows={5}
                     value={data.ingredients?.join(', ')} 
-                    onChange={e => setData({...data, ingredients: e.target.value.split(',')})}
+                    onChange={e => setData({ ingredients: e.target.value.split(',') })}
                     className="modern-input"
                   />
                 </InputGroup>
@@ -189,7 +212,7 @@ export default function Home() {
 
               {(data.templateType === 'blog' || data.templateType === 'guide') && (
                  <InputGroup label="Kısa Özet / İçerik">
-                   <textarea rows={6} value={data.excerpt} onChange={e => setData({...data, excerpt: e.target.value})} className="modern-input"/>
+                   <textarea rows={6} value={data.excerpt} onChange={e => setData({ excerpt: e.target.value })} className="modern-input"/>
                  </InputGroup>
               )}
 
@@ -197,14 +220,14 @@ export default function Home() {
                 <div className="flex justify-between items-center mb-3">
                    <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2"><ChefHat size={14}/> Uzman / Şef Kartı</span>
                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" checked={data.expert.isVisible} onChange={e => setData({...data, expert: {...data.expert, isVisible: e.target.checked}})} />
+                      <input type="checkbox" className="sr-only peer" checked={data.expert.isVisible} onChange={e => setData({ expert: { ...data.expert, isVisible: e.target.checked } })} />
                       <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF7F3F]"></div>
                    </label>
                 </div>
                 {data.expert.isVisible && (
                   <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2">
-                    <input type="text" placeholder="Ad Soyad" value={data.expert.name} onChange={e => setData({...data, expert: {...data.expert, name: e.target.value}})} className="modern-input"/>
-                    <input type="text" placeholder="Ünvan" value={data.expert.title} onChange={e => setData({...data, expert: {...data.expert, title: e.target.value}})} className="modern-input"/>
+                    <input type="text" placeholder="Ad Soyad" value={data.expert.name} onChange={e => setData({ expert: { ...data.expert, name: e.target.value } })} className="modern-input"/>
+                    <input type="text" placeholder="Ünvan" value={data.expert.title} onChange={e => setData({ expert: { ...data.expert, title: e.target.value } })} className="modern-input"/>
                   </div>
                 )}
               </div>
@@ -219,7 +242,7 @@ export default function Home() {
                 <label className="text-xs font-bold text-gray-500 uppercase mb-3 block ml-1">Arka Plan Görseli</label>
                 <div className="flex flex-col gap-3">
                    <div className="flex gap-2">
-                      <input type="text" placeholder="URL Yapıştır..." value={data.image} onChange={e => setData({...data, image: e.target.value})} className="modern-input flex-1"/>
+                      <input type="text" placeholder="URL Yapıştır..." value={data.image} onChange={e => setData({ image: e.target.value })} className="modern-input flex-1"/>
                    </div>
                    <label className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-gray-300 p-4 rounded-xl border border-dashed border-gray-600 cursor-pointer transition-all hover:border-[#FF7F3F] hover:text-[#FF7F3F]">
                       <Upload size={20} />
@@ -237,70 +260,143 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Gelişmiş Watermark Bölümü */}
               <div className="p-5 bg-white/5 rounded-2xl border border-white/5">
-                 <div className="flex justify-between items-center mb-5">
-                    <span className="text-sm font-bold text-white flex items-center gap-2"><LayoutTemplate size={16}/> Filigran / Logo</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" checked={data.watermark.isVisible} onChange={e => setData({...data, watermark: {...data.watermark, isVisible: e.target.checked}})} />
-                      <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF7F3F]"></div>
-                   </label>
-                 </div>
-                 
-                 {data.watermark.isVisible && (
-                   <div className="space-y-5">
-                      
-                      <label className="flex items-center justify-between bg-black/20 hover:bg-black/30 p-3 rounded-lg border border-white/10 cursor-pointer transition-colors group">
-                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-white">
-                               <ImagePlus size={18} />
-                            </div>
-                            <div className="flex flex-col">
-                               <span className="text-xs font-bold text-gray-200">Görsel Seç</span>
-                               <span className="text-[10px] text-gray-500">{data.watermark.url ? 'Değiştirmek için tıkla' : 'Logo veya Badge yükle'}</span>
-                            </div>
-                         </div>
-                         <input type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleWatermarkUpload} />
-                      </label>
-
-                      <div>
-                         <label className="text-[10px] text-gray-500 uppercase font-bold mb-2 block">Pozisyon</label>
-                         <div className="grid grid-cols-3 gap-2 w-32 mx-auto bg-black/20 p-2 rounded-lg">
-                            {['top-left', 'center', 'top-right', 'center', 'center', 'center', 'bottom-left', 'center', 'bottom-right'].map((pos, i) => {
-                                if (i === 1 || i === 3 || i === 5 || i === 7) return <div key={i}></div>; 
-                                if (i === 4) return <PosBtn key={i} pos="center" active={data.watermark.position} onClick={p => setData({...data, watermark: {...data.watermark, position: p}})} icon={<div className="w-1.5 h-1.5 rounded-full bg-current"/>} />;
-                                return <PosBtn key={i} pos={pos as WatermarkPosition} active={data.watermark.position} onClick={p => setData({...data, watermark: {...data.watermark, position: p}})} />;
-                            })}
-                         </div>
+                <div className="flex justify-between items-center mb-5">
+                  <span className="text-sm font-bold text-white flex items-center gap-2">
+                    <LayoutTemplate size={16}/> Filigran / Logo
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={data.watermark.isVisible} 
+                      onChange={e => setWatermark({ isVisible: e.target.checked })}
+                    />
+                    <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF7F3F]"></div>
+                  </label>
+                </div>
+                
+                {data.watermark.isVisible && (
+                  <div className="space-y-5">
+                    
+                    {/* Watermark Önizleme */}
+                    <div className="flex items-center gap-4 p-3 bg-black/20 rounded-xl">
+                      <div className="w-16 h-16 bg-white/10 rounded-lg flex items-center justify-center overflow-hidden">
+                        {effectiveWatermarkUrl ? (
+                          <img 
+                            src={effectiveWatermarkUrl} 
+                            alt="Watermark" 
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        ) : (
+                          <LayoutTemplate size={24} className="text-gray-500" />
+                        )}
                       </div>
-
-                      <div className="space-y-4">
-                         <div>
-                            <div className="flex justify-between mb-1">
-                               <label className="text-[10px] text-gray-500 uppercase font-bold">Opaklık</label>
-                               <span className="text-[10px] text-gray-400">{Math.round(data.watermark.opacity * 100)}%</span>
-                            </div>
-                            <input 
-                              type="range" min="0.1" max="1" step="0.1" 
-                              value={data.watermark.opacity} 
-                              onChange={e => setData({...data, watermark: {...data.watermark, opacity: parseFloat(e.target.value)}})}
-                              className="w-full accent-[#FF7F3F] h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                            />
-                         </div>
-                         <div>
-                            <div className="flex justify-between mb-1">
-                               <label className="text-[10px] text-gray-500 uppercase font-bold">Boyut</label>
-                               <span className="text-[10px] text-gray-400">{data.watermark.scale}x</span>
-                            </div>
-                            <input 
-                              type="range" min="0.5" max="3" step="0.1" 
-                              value={data.watermark.scale} 
-                              onChange={e => setData({...data, watermark: {...data.watermark, scale: parseFloat(e.target.value)}})}
-                              className="w-full accent-[#FF7F3F] h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                            />
-                         </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-400">Aktif Filigran</p>
+                        <p className="text-sm text-white truncate">
+                          {data.watermark.url ? 'Özel Logo' : 'KidsGourmet Logo'}
+                        </p>
                       </div>
-                   </div>
-                 )}
+                    </div>
+
+                    {/* Varsayılan Logo Butonu */}
+                    <button
+                      onClick={handleUseDefaultWatermark}
+                      className="w-full py-3 px-4 bg-[#FF7F3F]/20 hover:bg-[#FF7F3F]/30 border border-[#FF7F3F]/50 rounded-xl text-[#FF7F3F] text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ImageIcon size={16} />
+                      KidsGourmet Logo Kullan
+                    </button>
+
+                    {/* Özel Logo Yükle */}
+                    <label className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-gray-300 p-4 rounded-xl border border-dashed border-gray-600 cursor-pointer transition-colors">
+                      <Upload size={20} />
+                      <span className="text-sm font-medium">Özel Logo Yükle</span>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/png, image/jpeg, image/svg+xml" 
+                        onChange={handleWatermarkUpload} 
+                      />
+                    </label>
+
+                    {/* URL ile Logo */}
+                    <input
+                      type="text"
+                      placeholder="veya Logo URL'si yapıştır..."
+                      value={data.watermark.url}
+                      onChange={e => setWatermark({ url: e.target.value })}
+                      className="modern-input text-sm"
+                    />
+
+                    {/* Pozisyon Seçici */}
+                    <div>
+                      <label className="text-[10px] text-gray-500 uppercase font-bold mb-3 block">Pozisyon</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {WATERMARK_POSITIONS.map((pos) => (
+                          <button
+                            key={pos.id}
+                            onClick={() => setWatermark({ position: pos.id as WatermarkPosition })}
+                            className={`py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${
+                              data.watermark.position === pos.id
+                                ? 'bg-[#FF7F3F] text-white'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                            }`}
+                          >
+                            <span>{pos.icon}</span>
+                            <span className="hidden sm:inline">{pos.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Opacity Slider */}
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <label className="text-[10px] text-gray-500 uppercase font-bold">Opaklık</label>
+                        <span className="text-[10px] text-gray-400">{Math.round(data.watermark.opacity * 100)}%</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0.1" 
+                        max="1" 
+                        step="0.05" 
+                        value={data.watermark.opacity} 
+                        onChange={e => setWatermark({ opacity: parseFloat(e.target.value) })}
+                        className="w-full accent-[#FF7F3F] h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Scale Slider */}
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <label className="text-[10px] text-gray-500 uppercase font-bold">Boyut</label>
+                        <span className="text-[10px] text-gray-400">{data.watermark.scale.toFixed(1)}x</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0.3" 
+                        max="2" 
+                        step="0.1" 
+                        value={data.watermark.scale} 
+                        onChange={e => setWatermark({ scale: parseFloat(e.target.value) })}
+                        className="w-full accent-[#FF7F3F] h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Watermark Temizle */}
+                    {data.watermark.url && (
+                      <button
+                        onClick={() => setWatermark({ url: '' })}
+                        className="w-full py-2 text-xs text-gray-500 hover:text-red-400 transition-colors"
+                      >
+                        Özel logoyu kaldır (varsayılana dön)
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -326,7 +422,7 @@ export default function Home() {
          
          {/* Scale Değerleri Düşürüldü */}
          <div className="transform-gpu scale-[0.25] md:scale-[0.3] lg:scale-[0.35] xl:scale-[0.4] 2xl:scale-[0.5] transition-all duration-500 shadow-2xl ring-1 ring-white/5 relative z-10 flex-shrink-0 origin-center">
-            <SocialCard ref={cardRef} format={format} data={data} />
+            <SocialCard ref={cardRef} format={format} data={data} defaultWatermarkUrl={effectiveWatermarkUrl} />
          </div>
       </div>
 
@@ -336,20 +432,13 @@ export default function Home() {
 
 // --- Alt Bileşenler & Stiller ---
 
-interface PosBtnProps {
-  pos: WatermarkPosition | 'center';
-  active: string;
-  onClick: (p: WatermarkPosition) => void;
-  icon?: React.ReactNode;
-}
-
 // HATA DÜZELTİLDİ: React.cloneElement tipi ve prop yapısı
 const NavIcon = ({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) => (
   <button 
     onClick={onClick}
     className={`w-full aspect-square flex flex-col items-center justify-center gap-1.5 rounded-xl transition-all ${active ? 'bg-[#FF7F3F] text-white shadow-lg shadow-orange-900/20' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
   >
-    {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 20 }) : icon}
+    {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ size?: number }>, { size: 20 }) : icon}
     <span className="text-[10px] font-bold tracking-wide">{label}</span>
   </button>
 );
@@ -359,13 +448,4 @@ const InputGroup = ({ label, children }: { label: string, children: React.ReactN
     <label className="text-xs font-bold text-gray-500 uppercase mb-2 block ml-1">{label}</label>
     {children}
   </div>
-);
-
-const PosBtn = ({ pos, active, onClick, icon }: PosBtnProps) => (
-  <button 
-    onClick={() => onClick(pos as WatermarkPosition)}
-    className={`w-full aspect-square rounded flex items-center justify-center transition-colors border ${active === pos ? 'bg-[#FF7F3F] border-[#FF7F3F] text-white' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
-  >
-    {icon || <div className={`w-1.5 h-1.5 rounded-full ${active === pos ? 'bg-white' : 'bg-gray-500'}`}/>}
-  </button>
 );
