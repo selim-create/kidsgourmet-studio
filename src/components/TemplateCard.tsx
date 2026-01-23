@@ -3,16 +3,59 @@
 import React from 'react';
 import { Instagram, ImageIcon, ChefHat, FileText, BookOpen } from 'lucide-react';
 import { TemplateCardProps } from '@/types';
+import SocialCard from '@/components/SocialCard';
+import { DEFAULTS } from '@/lib/constants';
 
 const TemplateCard: React.FC<TemplateCardProps> = ({
+  id,
   name,
   description,
   previewImage,
   templateType,
   format,
+  layout,
   tags,
   onSelect
 }) => {
+  
+  // Placeholder data for preview
+  const previewData = {
+    id: 'preview',
+    templateType,
+    title: name,
+    image: DEFAULTS.PLACEHOLDER_IMAGE,
+    category: templateType === 'recipe' ? '6-9 Ay' : templateType === 'blog' ? 'Blog' : 'Rehber',
+    ingredients: templateType === 'recipe' ? ['Havuç', 'Patates', 'Bezelye'] : [],
+    excerpt: 'Örnek açıklama metni buraya gelecek.',
+    ageGroup: '6-9 Ay',
+    ageGroupColor: '#FF8A65',
+    mealType: 'Ana Yemek',
+    prepTime: '15 dk',
+    season: 'Kış',
+    allergens: [],
+    allergyRisk: '',
+    author: { 
+      name: 'KidsGourmet', 
+      avatarUrl: '', 
+      isVisible: false 
+    },
+    expert: { 
+      name: 'Dyt. Uzman', 
+      title: 'Beslenme Uzmanı',
+      avatarUrl: '',
+      note: '',
+      isVisible: false, 
+      isVerified: true 
+    },
+    watermark: { 
+      isVisible: false,
+      url: '', 
+      position: 'top-right' as const,
+      opacity: 1, 
+      scale: 1 
+    },
+    theme: 'modern' as const
+  };
   
   const getTypeIcon = () => {
     switch (templateType) {
@@ -45,19 +88,27 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
       className="group relative bg-[#1E1E1E] border border-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:border-[#FF7F3F]/50 cursor-pointer"
       onClick={onSelect}
     >
-      {/* Preview Image */}
+      {/* Preview using SocialCard */}
       <div className="aspect-[9/16] bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden">
-        {previewImage && previewImage.startsWith('/templates/') ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-6xl opacity-20">{getTypeIcon()}</div>
+        {/* Mini preview with scale */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div 
+            className="absolute top-0 left-0 origin-top-left"
+            style={{
+              transform: 'scale(0.16)', // Scale down for preview
+              transformOrigin: 'top left'
+            }}
+          >
+            <SocialCard 
+              format={format} 
+              data={previewData} 
+              layout={layout}
+            />
           </div>
-        ) : (
-          <img 
-            src={previewImage} 
-            alt={name}
-            className="w-full h-full object-cover"
-          />
-        )}
+        </div>
+        
+        {/* Gradient overlay for better readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
         
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -67,7 +118,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
         </div>
 
         {/* Format Badge */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 z-10">
           {getFormatBadge()}
         </div>
       </div>

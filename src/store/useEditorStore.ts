@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { TemplateData, SocialFormat } from '@/types';
+import { TemplateData, SocialFormat, TemplateLayout } from '@/types';
 import { DEFAULTS } from '@/lib/constants';
 
 interface EditorState {
@@ -10,7 +10,7 @@ interface EditorState {
   
   // Template Selection
   selectedTemplate: string | null;
-  selectedLayout: string;
+  selectedLayout: TemplateLayout;
   
   // Actions
   setData: (data: Partial<TemplateData>) => void;
@@ -19,7 +19,7 @@ interface EditorState {
   resetData: () => void;
   loadFromPost: (data: TemplateData) => void;
   setSelectedTemplate: (templateId: string | null) => void;
-  setSelectedLayout: (layout: string) => void;
+  setSelectedLayout: (layout: TemplateLayout) => void;
 }
 
 const DEFAULT_DATA: TemplateData = {
