@@ -21,6 +21,11 @@ export default function CaptionGenerator({ isOpen, onClose, templateType, title,
   const generateCaption = useCallback(() => {
     // Get random template for the content type
     const templates = CAPTION_TEMPLATES[templateType];
+    if (!templates || templates.length === 0) {
+      setCaption('Varsayılan caption metni buraya gelecek.');
+      return;
+    }
+    
     const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
     
     // Replace placeholders

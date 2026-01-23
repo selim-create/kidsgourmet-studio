@@ -10,9 +10,10 @@ interface BatchExportProps {
   isOpen: boolean;
   onClose: () => void;
   cardRef: React.RefObject<HTMLDivElement>;
-  currentFormat: 'story' | 'post';
   fileName: string;
 }
+
+const EXPORT_FORMATS = ['story', 'post'] as const;
 
 export default function BatchExport({ isOpen, onClose, cardRef, fileName }: BatchExportProps) {
   const [exportFormat, setExportFormat] = useState<'png' | 'jpeg'>('png');
@@ -30,11 +31,10 @@ export default function BatchExport({ isOpen, onClose, cardRef, fileName }: Batc
 
     try {
       const zip = new JSZip();
-      const formats = ['story', 'post'];
-      const totalSteps = formats.length;
+      const totalSteps = EXPORT_FORMATS.length;
 
-      for (let i = 0; i < formats.length; i++) {
-        const format = formats[i];
+      for (let i = 0; i < EXPORT_FORMATS.length; i++) {
+        const format = EXPORT_FORMATS[i];
         setProgress(((i + 1) / totalSteps) * 100);
 
         // Generate image

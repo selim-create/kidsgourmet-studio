@@ -722,7 +722,6 @@ function HomeContent() {
         isOpen={showBatchExport}
         onClose={() => setShowBatchExport(false)}
         cardRef={cardRef}
-        currentFormat={format}
         fileName={`KG-${data.templateType}-${format}`}
       />
 
