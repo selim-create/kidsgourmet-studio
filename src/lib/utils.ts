@@ -174,13 +174,14 @@ export const mapWpPostToTemplate = (post: WpPost): TemplateData => {
       isVisible: true, // Varsayılan açık
     },
     
-    // Uzman - ACF'de varsa doldur
+    // Uzman - Sadece ACF'de uzman bilgisi varsa doldur
+    // YAZAR BİLGİLERİNİ FALLBACK OLARAK KULLANMA
     expert: {
-      name: expertName || authorName, // Uzman yoksa yazar adını kullan
-      title: expertTitle,
-      avatarUrl: expertAvatar || authorAvatar, // Uzman avatarı yoksa yazar avatarını kullan
+      name: expertName, // Uzman yoksa boş string, yazar adını KULLANMA
+      title: expertName ? expertTitle : '', // Uzman yoksa title da boş
+      avatarUrl: expertAvatar, // Uzman avatarı yoksa boş, yazar avatarını KULLANMA
       note: expertNote,
-      isVisible: !!expertName, // Uzman adı varsa göster
+      isVisible: !!expertName, // Sadece uzman adı varsa göster
       isVerified: isExpertVerified,
     },
     
