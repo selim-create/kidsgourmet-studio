@@ -5,12 +5,13 @@ import {
   User, FileText, BookOpen, CheckCircle2, ChefHat, 
   Clock, AlertTriangle, Leaf, Baby
 } from 'lucide-react';
-import { TemplateData, SocialFormat } from '@/types';
+import { TemplateData, SocialFormat, TemplateLayout } from '@/types';
 
 interface SocialCardProps {
   format: SocialFormat;
   data: TemplateData;
   defaultWatermarkUrl?: string;
+  layout?: TemplateLayout;
 }
 
 const getProxyUrl = (url: string) => {
@@ -19,7 +20,7 @@ const getProxyUrl = (url: string) => {
   return `/api/proxy?url=${encodeURIComponent(url)}`;
 };
 
-const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data, defaultWatermarkUrl = '' }, ref) => {
+const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data, defaultWatermarkUrl = '', layout = 'modern' }, ref) => {
   
   // Format Boyutları
   const dimensions = format === 'story' 
