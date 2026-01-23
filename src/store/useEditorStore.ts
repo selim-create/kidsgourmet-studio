@@ -1,0 +1,94 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { TemplateData, SocialFormat, WatermarkPosition } from '@/types';
+import { DEFAULTS } from '@/lib/constants';
+
+interface EditorState {
+  // Template Data
+  data: TemplateData;
+  format: SocialFormat;
+  
+  // Actions
+  setData: (data: Partial<TemplateData>) => void;
+  setFormat: (format: SocialFormat) => void;
+  setWatermark: (watermark: Partial<TemplateData['watermark']>) => void;
+  resetData: () => void;
+  loadFromPost: (data: TemplateData) => void;
+}
+
+const DEFAULT_DATA: TemplateData = {
+  id: 'init',
+  templateType: 'recipe',
+  title: 'İçerik Başlığı',
+  image: DEFAULTS.PLACEHOLDER_IMAGE,
+  category: 'Kategori',
+  ingredients: ['Malzeme 1', 'Malzeme 2'],
+  excerpt: 'İçerik özeti buraya gelecek.',
+  ageGroup: '',
+  ageGroupColor: '',
+  mealType: '',
+  prepTime: '',
+  season: '',
+  allergens: [],
+  allergyRisk: '',
+  author: { 
+    name: 'KidsGourmet', 
+    avatarUrl: '', 
+    isVisible: true 
+  },
+  expert: { 
+    name: 'Dyt. Uzman Adı', 
+    title: 'Beslenme Uzmanı', 
+    avatarUrl: '',
+    note: '',
+    isVisible: true, 
+    isVerified: true 
+  },
+  watermark: { 
+    isVisible: true, 
+    url: '', // Boş = varsayılan logo kullanılacak
+    position: 'top-right', 
+    opacity: 1, 
+    scale: 1 
+  },
+  theme: 'modern'
+};
+
+export const useEditorStore = create<EditorState>()(
+  persist(
+    (set, get) => ({
+      data: DEFAULT_DATA,
+      format: 'story',
+      
+      setData: (newData) => set((state) => ({
+        data: { ...state.data, ...newData }
+      })),
+      
+      setFormat: (format) => set({ format }),
+      
+      setWatermark: (watermark) => set((state) => ({
+        data: {
+          ...state.data,
+          watermark: { ...state.data.watermark, ...watermark }
+        }
+      })),
+      
+      resetData: () => set({ data: DEFAULT_DATA }),
+      
+      loadFromPost: (data) => set((state) => ({
+        data: { 
+          ...data, 
+          watermark: state.data.watermark // Watermark ayarlarını koru
+        }
+      })),
+    }),
+    {
+      name: 'kg-studio-editor',
+      partialize: (state) => ({ 
+        format: state.format,
+        // Sadece watermark ayarlarını persist et
+        watermarkSettings: state.data.watermark 
+      }),
+    }
+  )
+);

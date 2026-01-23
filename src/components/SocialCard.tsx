@@ -10,6 +10,7 @@ import { TemplateData, SocialFormat } from '@/types';
 interface SocialCardProps {
   format: SocialFormat;
   data: TemplateData;
+  defaultWatermarkUrl?: string;
 }
 
 const getProxyUrl = (url: string) => {
@@ -18,7 +19,7 @@ const getProxyUrl = (url: string) => {
   return `/api/proxy?url=${encodeURIComponent(url)}`;
 };
 
-const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data }, ref) => {
+const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data, defaultWatermarkUrl = '' }, ref) => {
   
   // Format Boyutları
   const dimensions = format === 'story' 
@@ -79,9 +80,9 @@ const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data }
       {/* --- KATMAN 2: FİLİGRAN (Dinamik) --- */}
       {data.watermark.isVisible && (
         <div className={`absolute z-50 ${getWatermarkPosition()} flex items-center justify-center pointer-events-none drop-shadow-2xl`}>
-          {data.watermark.url ? (
+          {(data.watermark.url || defaultWatermarkUrl) ? (
             <img 
-              src={data.watermark.url} 
+              src={getProxyUrl(data.watermark.url || defaultWatermarkUrl || '/kg-logo.png')} 
               style={{ opacity: data.watermark.opacity, transform: `scale(${data.watermark.scale})` }}
               className="max-w-[250px] max-h-[150px] object-contain"
               alt="Watermark"

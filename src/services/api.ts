@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_ENDPOINTS, STORAGE_KEYS } from '@/lib/constants';
+import { API_BASE_URL, API_ENDPOINTS, STORAGE_KEYS, DEFAULTS, WP_API_NAMESPACE } from '@/lib/constants';
 import { WpPost } from '@/types';
 
 const getHeaders = () => {
@@ -212,5 +212,27 @@ export const getDefaultWatermark = async (): Promise<string> => {
   }
   
   // Fallback
-  return '/assets/kg-logo.png';
+  return DEFAULTS.WATERMARK_URL;
+};
+
+// 6. Media library'den watermark seçenekleri çek
+export const getWatermarkOptions = async (): Promise<Array<{id: number; url: string; title: string}>> => {
+  try {
+    // Logo tag'li medyaları çek
+    const url = `${API_BASE_URL}${WP_API_NAMESPACE}/media?search=logo&per_page=10`;
+    const res = await fetch(url, { headers: getHeaders() });
+    
+    if (!res.ok) return [];
+    
+    const data = await res.json();
+    
+    return data.map((item: any) => ({
+      id: item.id,
+      url: item.source_url,
+      title: item.title?.rendered || 'Logo',
+    }));
+  } catch (error) {
+    console.error('getWatermarkOptions error:', error);
+    return [];
+  }
 };
