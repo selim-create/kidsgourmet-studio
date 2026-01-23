@@ -114,11 +114,18 @@ export const mapWpPostToTemplate = (post: WpPost): TemplateData => {
   if (post.acf?.allergens) {
     const allergensRaw = post.acf.allergens;
     if (Array.isArray(allergensRaw)) {
-      allergens = allergensRaw.filter(Boolean);
+      // Filter out empty values and ensure strings
+      allergens = allergensRaw
+        .filter(Boolean)
+        .map(item => typeof item === 'string' ? item : String(item))
+        .filter(item => item.trim().length > 0);
     } else if (typeof allergensRaw === 'string') {
       // Type assertion needed because TypeScript can't narrow union type properly
       const stringAllergens = allergensRaw as string;
-      allergens = stringAllergens.split(',').map((s: string) => s.trim()).filter(Boolean);
+      allergens = stringAllergens
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
     }
   }
   
