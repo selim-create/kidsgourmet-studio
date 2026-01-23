@@ -11,24 +11,25 @@ export const API_ENDPOINTS = {
   AUTH_LOGIN: `${KG_API_NAMESPACE}/auth/login`,
   AUTH_ME: `${KG_API_NAMESPACE}/auth/me`,
   
-  // İçerik
-  RECIPES: `${WP_API_NAMESPACE}/recipes`,
+  // KG Custom API (meta veriler dahil)
+  RECIPES: `${KG_API_NAMESPACE}/recipes`,
+  RECIPES_BY_SLUG: (slug: string) => `${KG_API_NAMESPACE}/recipes/${slug}`,
+  RECIPES_BY_ID: (id: number) => `${KG_API_NAMESPACE}/recipes/${id}`,
+  RECIPES_SEARCH: `${KG_API_NAMESPACE}/recipes`,
+  
+  INGREDIENTS: `${KG_API_NAMESPACE}/ingredients`,
+  INGREDIENTS_BY_SLUG: (slug: string) => `${KG_API_NAMESPACE}/ingredients/${slug}`,
+  INGREDIENTS_BY_ID: (id: number) => `${KG_API_NAMESPACE}/ingredients/${id}`,
+  INGREDIENTS_SEARCH: `${KG_API_NAMESPACE}/ingredients/search`,
+  
+  // WordPress standart API (blog yazıları için)
   POSTS: `${WP_API_NAMESPACE}/posts`,
+  POSTS_BY_SLUG: (slug: string) => `${WP_API_NAMESPACE}/posts?slug=${slug}&_embed`,
+  POSTS_BY_ID: (id: number) => `${WP_API_NAMESPACE}/posts/${id}?_embed`,
   
-  // Beslenme Rehberi (Malzemeler) - DÜZELTİLDİ
-  INGREDIENTS: `${WP_API_NAMESPACE}/ingredients`,
-  
+  // Diğer
   MEDIA: `${WP_API_NAMESPACE}/media`,
   SEARCH: `${KG_API_NAMESPACE}/search`,
-  
-  // Yeni endpoint'ler
-  POSTS_BY_SLUG: (slug: string) => `${WP_API_NAMESPACE}/posts?slug=${slug}&_embed`,
-  RECIPES_BY_SLUG: (slug: string) => `${WP_API_NAMESPACE}/recipes?slug=${slug}&_embed`,
-  INGREDIENTS_BY_SLUG: (slug: string) => `${WP_API_NAMESPACE}/ingredients?slug=${slug}&_embed`,
-  
-  POSTS_BY_ID: (id: number) => `${WP_API_NAMESPACE}/posts/${id}?_embed`,
-  RECIPES_BY_ID: (id: number) => `${WP_API_NAMESPACE}/recipes/${id}?_embed`,
-  INGREDIENTS_BY_ID: (id: number) => `${WP_API_NAMESPACE}/ingredients/${id}?_embed`,
   
   // Site ayarları (watermark için)
   SITE_OPTIONS: `${KG_API_NAMESPACE}/options`,

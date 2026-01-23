@@ -1,3 +1,60 @@
+// KG API Response Types (from /kg/v1/ endpoints)
+export interface KgRecipeResponse {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string;
+  image: string;
+  prep_time: string;
+  ingredients: string[];
+  instructions?: string[];
+  age_group: string;
+  age_group_color: string;
+  meal_type: string;
+  diet_types: string[];
+  author: {
+    id: number;
+    name: string;
+    slug: string;
+    avatar: string;
+  };
+  expert: {
+    name: string;
+    title: string;
+    note?: string;
+    image: string;
+    approved: boolean;
+    slug: string;
+    user_id: number | null;
+  };
+  allergens: string[];
+  rating?: number;
+  rating_count?: number;
+  is_featured?: boolean;
+}
+
+export interface KgIngredientResponse {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  start_age: string;
+  category: string;
+  allergy_risk: string;
+  season: string[];
+  expert: {
+    name: string;
+    title: string;
+    note?: string;
+    image: string;
+    approved: boolean;
+    slug: string;
+    user_id: number | null;
+  };
+  allergens: string[];
+}
+
 // Backend'den (WordPress) gelen ham veri
 export interface WpPost {
   id: number;

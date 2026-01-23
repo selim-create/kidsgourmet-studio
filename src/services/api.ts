@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS, STORAGE_KEYS, DEFAULTS, WP_API_NAMESPACE } from '@/lib/constants';
-import { WpPost } from '@/types';
+import { WpPost, KgRecipeResponse, KgIngredientResponse } from '@/types';
 
 const getHeaders = () => {
   const headers: HeadersInit = {
@@ -22,6 +22,102 @@ type TaxonomyTerm = {
   taxonomy?: string;
   meta?: {
     color_code?: string;
+  };
+};
+
+// Helper: Convert KG Recipe Response to WpPost format
+const mapKgRecipeToWpPost = (recipe: KgRecipeResponse): WpPost => {
+  return {
+    id: recipe.id,
+    date: new Date().toISOString(),
+    slug: recipe.slug,
+    type: 'recipes',
+    author: recipe.author.id,
+    title: { rendered: recipe.title },
+    content: { rendered: '' },
+    excerpt: { rendered: recipe.excerpt },
+    featured_media: 0,
+    _embedded: {
+      'wp:featuredmedia': recipe.image ? [{ source_url: recipe.image }] : [],
+      'author': recipe.author ? [{
+        name: recipe.author.name,
+        avatar_urls: { '96': recipe.author.avatar, '48': recipe.author.avatar },
+        id: recipe.author.id,
+        slug: recipe.author.slug,
+      }] : [],
+      'wp:term': [
+        recipe.age_group ? [{
+          id: 0,
+          name: recipe.age_group,
+          slug: recipe.age_group.toLowerCase(),
+          taxonomy: 'age-group',
+          meta: { color_code: recipe.age_group_color }
+        }] : [],
+        recipe.meal_type ? [{
+          id: 0,
+          name: recipe.meal_type,
+          slug: recipe.meal_type.toLowerCase(),
+          taxonomy: 'meal-type'
+        }] : []
+      ].filter(arr => arr.length > 0)
+    },
+    acf: {
+      ingredients: recipe.ingredients,
+      preparation_time: recipe.prep_time,
+      expert_name: recipe.expert?.name,
+      expert_title: recipe.expert?.title,
+      expert_avatar: recipe.expert?.image,
+      expert_note: recipe.expert?.note,
+      is_expert_verified: recipe.expert?.approved,
+      allergens: recipe.allergens,
+    }
+  };
+};
+
+// Helper: Convert KG Ingredient Response to WpPost format
+const mapKgIngredientToWpPost = (ingredient: KgIngredientResponse): WpPost => {
+  // Join season array to string, or use first element
+  const seasonStr = Array.isArray(ingredient.season) 
+    ? ingredient.season[0] || '' 
+    : ingredient.season || '';
+
+  return {
+    id: ingredient.id,
+    date: new Date().toISOString(),
+    slug: ingredient.slug,
+    type: 'ingredients',
+    title: { rendered: ingredient.name },
+    content: { rendered: ingredient.description },
+    excerpt: { rendered: ingredient.description },
+    featured_media: 0,
+    _embedded: {
+      'wp:featuredmedia': ingredient.image ? [{ source_url: ingredient.image }] : [],
+      'wp:term': [
+        seasonStr ? [{
+          id: 0,
+          name: seasonStr,
+          slug: seasonStr.toLowerCase(),
+          taxonomy: 'season'
+        }] : [],
+        ingredient.category ? [{
+          id: 0,
+          name: ingredient.category,
+          slug: ingredient.category.toLowerCase(),
+          taxonomy: 'category'
+        }] : []
+      ].filter(arr => arr.length > 0)
+    },
+    acf: {
+      season: seasonStr,
+      allergens: ingredient.allergens,
+      allergy_risk: ingredient.allergy_risk,
+      start_age: ingredient.start_age,
+      expert_name: ingredient.expert?.name,
+      expert_title: ingredient.expert?.title,
+      expert_avatar: ingredient.expert?.image,
+      expert_note: ingredient.expert?.note,
+      is_expert_verified: ingredient.expert?.approved,
+    }
   };
 };
 
@@ -154,8 +250,13 @@ const hydratePostData = async (posts: WpPost[]): Promise<WpPost[]> => {
           }
         });
         
-        // wp:term formatında düzenle
-        const termArrays = Object.values(groupedTerms);
+        // wp:term formatında düzenle - taxonomy'si olan terimleri kullan
+        const termArrays = Object.values(groupedTerms).map(group => 
+          group.map(term => ({
+            ...term,
+            taxonomy: term.taxonomy as string // taxonomy zorunlu
+          }))
+        );
         updatedPost = {
           ...updatedPost,
           _embedded: {
@@ -170,7 +271,7 @@ const hydratePostData = async (posts: WpPost[]): Promise<WpPost[]> => {
   }));
 };
 
-// 1. İçerik Arama (GÜNCELLENDİ: _embed parametresi düzeltildi, encoding eklendi)
+// 1. İçerik Arama (GÜNCELLENDİ: kg/v1 endpoint'leri kullan)
 export const searchContent = async (
   query: string, 
   type: 'recipes' | 'posts' | 'ingredients' | 'all' = 'recipes'
@@ -186,18 +287,41 @@ export const searchContent = async (
   }
   
   let endpoint = API_ENDPOINTS.RECIPES;
+  let useKgApi = true;
   
-  if (type === 'posts') endpoint = API_ENDPOINTS.POSTS;
-  if (type === 'ingredients') endpoint = API_ENDPOINTS.INGREDIENTS;
+  if (type === 'posts') {
+    endpoint = API_ENDPOINTS.POSTS;
+    useKgApi = false; // Posts still use wp/v2
+  } else if (type === 'ingredients') {
+    endpoint = API_ENDPOINTS.INGREDIENTS_SEARCH;
+    useKgApi = true;
+  }
 
-  const url = `${API_BASE_URL}${endpoint}?search=${encodeURIComponent(query)}&_embed&per_page=10`;
+  // For kg/v1 endpoints, use query parameter based on API design:
+  // - Recipes use 'search' parameter: /kg/v1/recipes?search={query}
+  // - Ingredients use 'q' parameter: /kg/v1/ingredients/search?q={query}
+  // This reflects the backend API implementation
+  const queryParam = useKgApi && type === 'ingredients' ? 'q' : 'search';
+  const embedParam = useKgApi ? '' : '&_embed'; // kg/v1 doesn't need _embed
+  const url = `${API_BASE_URL}${endpoint}?${queryParam}=${encodeURIComponent(query)}${embedParam}&per_page=10`;
 
   try {
     const res = await fetch(url, { headers: getHeaders() });
     if (!res.ok) throw new Error(`API Hatası: ${res.status}`);
     
     let data = await res.json();
-    data = await hydratePostData(data);
+    
+    // If using kg/v1 API, convert to WpPost format
+    if (useKgApi) {
+      if (type === 'recipes') {
+        data = data.map((item: KgRecipeResponse) => mapKgRecipeToWpPost(item));
+      } else if (type === 'ingredients') {
+        data = data.map((item: KgIngredientResponse) => mapKgIngredientToWpPost(item));
+      }
+    } else {
+      // For wp/v2 API, hydrate the data
+      data = await hydratePostData(data);
+    }
     
     return data;
   } catch (error) {
@@ -236,7 +360,7 @@ export const loginUser = async (username: string, password: string) => {
   }
 };
 
-// 3. Post'u URL ile çek
+// 3. Post'u URL ile çek (GÜNCELLENDİ: kg/v1 endpoint kullan)
 export const getPostByUrl = async (url: string): Promise<WpPost | null> => {
   try {
     // URL'den slug çıkar
@@ -247,28 +371,44 @@ export const getPostByUrl = async (url: string): Promise<WpPost | null> => {
     // Post type'ı belirle (tarifler, malzemeler, vb.)
     let endpoint = '';
     let postType = 'posts';
+    let useKgApi = false;
     
     if (url.includes('/tarifler/') || url.includes('/recipes/')) {
       endpoint = API_ENDPOINTS.RECIPES_BY_SLUG(slug);
       postType = 'recipes';
+      useKgApi = true;
     } else if (url.includes('/malzemeler/') || url.includes('/ingredients/')) {
       endpoint = API_ENDPOINTS.INGREDIENTS_BY_SLUG(slug);
       postType = 'ingredients';
+      useKgApi = true;
     } else {
       endpoint = API_ENDPOINTS.POSTS_BY_SLUG(slug);
       postType = 'posts';
+      useKgApi = false;
     }
     
     const res = await fetch(`${API_BASE_URL}${endpoint}`, { headers: getHeaders() });
     if (!res.ok) return null;
     
     const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      // Post type bilgisini ekle
-      const postWithType = { ...data[0], type: postType };
-      const posts = await hydratePostData([postWithType]);
-      return posts[0];
+    
+    // kg/v1 returns single object for slug lookup, wp/v2 returns array
+    if (useKgApi) {
+      // kg/v1 API returns single object
+      if (postType === 'recipes') {
+        return mapKgRecipeToWpPost(data as KgRecipeResponse);
+      } else if (postType === 'ingredients') {
+        return mapKgIngredientToWpPost(data as KgIngredientResponse);
+      }
+    } else {
+      // wp/v2 API returns array
+      if (Array.isArray(data) && data.length > 0) {
+        const postWithType = { ...data[0], type: postType };
+        const posts = await hydratePostData([postWithType]);
+        return posts[0];
+      }
     }
+    
     return null;
   } catch (error) {
     console.error('Get Post By URL Error:', error);
@@ -276,25 +416,46 @@ export const getPostByUrl = async (url: string): Promise<WpPost | null> => {
   }
 };
 
-// 4. Post'u ID ile çek
+// 4. Post'u ID ile çek (GÜNCELLENDİ: kg/v1 endpoint kullan)
 export const getPostById = async (
   id: number, 
   type: 'recipes' | 'posts' | 'ingredients'
 ): Promise<WpPost | null> => {
   try {
     let endpoint = '';
-    if (type === 'recipes') endpoint = API_ENDPOINTS.RECIPES_BY_ID(id);
-    else if (type === 'ingredients') endpoint = API_ENDPOINTS.INGREDIENTS_BY_ID(id);
-    else endpoint = API_ENDPOINTS.POSTS_BY_ID(id);
+    let useKgApi = false;
+    
+    if (type === 'recipes') {
+      endpoint = API_ENDPOINTS.RECIPES_BY_ID(id);
+      useKgApi = true;
+    } else if (type === 'ingredients') {
+      endpoint = API_ENDPOINTS.INGREDIENTS_BY_ID(id);
+      useKgApi = true;
+    } else {
+      endpoint = API_ENDPOINTS.POSTS_BY_ID(id);
+      useKgApi = false;
+    }
     
     const res = await fetch(`${API_BASE_URL}${endpoint}`, { headers: getHeaders() });
     if (!res.ok) return null;
     
     const data = await res.json();
-    // Post type bilgisini ekle
-    const postWithType = { ...data, type };
-    const posts = await hydratePostData([postWithType]);
-    return posts[0];
+    
+    // Convert kg/v1 response to WpPost format
+    if (useKgApi) {
+      if (type === 'recipes') {
+        return mapKgRecipeToWpPost(data as KgRecipeResponse);
+      } else if (type === 'ingredients') {
+        return mapKgIngredientToWpPost(data as KgIngredientResponse);
+      }
+    } else {
+      // wp/v2 API - hydrate the data
+      const postWithType = { ...data, type };
+      const posts = await hydratePostData([postWithType]);
+      return posts[0];
+    }
+    
+    return null;
   } catch (error) {
     console.error('Get Post By ID Error:', error);
     return null;
