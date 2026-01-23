@@ -1,26 +1,37 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Font */
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+
+  /* KidsGourmet Renkleri */
+  --color-kg-primary: #FF8A65;   /* Ana Turuncu */
+  --color-kg-secondary: #AED581; /* Ana Yeşil */
+  --color-kg-blue: #81D4FA;
+  --color-kg-yellow: #FFF176;
+  --color-kg-dark: #455A64;      /* Koyu Metin */
+  --color-kg-light: #FFFBE6;     /* Krem Arkaplan */
+  --color-kg-purple: #B39DDB;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Genel Editör Stili */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #1a1a1a; /* Studio arka planı koyu olsun */
+  color: white;
+  font-family: var(--font-sans);
+}
+
+/* Scrollbar özelleştirme (Sol panel için) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #FF8A65;
 }
