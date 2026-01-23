@@ -3,12 +3,12 @@ import { WpPost, TemplateData, TemplateType } from '@/types';
 // Yardımcı fonksiyonlar
 const decodeHtmlEntities = (text: string): string => {
   return text
-    .replace(/&amp;/g, '&')
     .replace(/&#8217;/g, "'")
     .replace(/&#8220;/g, '"')
     .replace(/&#8221;/g, '"')
     .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
 };
 
 const stripHtml = (html: string): string => {
