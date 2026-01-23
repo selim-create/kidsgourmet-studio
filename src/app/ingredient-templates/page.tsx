@@ -119,6 +119,7 @@ export default function IngredientTemplatesPage() {
               previewImage={template.previewImage}
               templateType={template.templateType}
               format={template.format}
+              layout={template.layout}
               tags={template.tags}
               onSelect={() => handleTemplateSelect(template.id)}
             />

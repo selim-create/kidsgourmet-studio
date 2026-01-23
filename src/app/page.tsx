@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useRef, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import SocialCard from '@/components/SocialCard';
 import SearchPanel from '@/components/SearchPanel';
 import ImageLibrary from '@/components/ImageLibrary';
@@ -17,14 +17,16 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { STORAGE_KEYS, WATERMARK_POSITIONS, DEFAULTS } from '@/lib/constants';
+import { ALL_TEMPLATES } from '@/lib/templates';
 
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const cardRef = useRef<HTMLDivElement>(null);
   
   // Zustand Stores
-  const { data, format, setData, setFormat, setWatermark, resetData, loadFromPost } = useEditorStore();
+  const { data, format, setData, setFormat, setWatermark, resetData, loadFromPost, selectedLayout, setSelectedLayout, setSelectedTemplate } = useEditorStore();
   const { defaultWatermarkUrl, setDefaultWatermark } = useSettingsStore();
   
   // Local State (UI only)
@@ -42,7 +44,27 @@ export default function Home() {
     }
   }, [router]);
 
-  // 2. Varsayılan Watermark'ı Yükle
+  // 2. Template Query Parameter Handler
+  useEffect(() => {
+    const templateParam = searchParams.get('template');
+    if (templateParam) {
+      const selectedTemplate = ALL_TEMPLATES.find(t => t.id === templateParam);
+      if (selectedTemplate) {
+        // Set format (story/post)
+        setFormat(selectedTemplate.format);
+        // Set layout
+        setSelectedLayout(selectedTemplate.layout);
+        // Set template ID
+        setSelectedTemplate(selectedTemplate.id);
+        // Set template type
+        setData({ templateType: selectedTemplate.templateType });
+        // Switch to edit tab
+        setActiveTab('edit');
+      }
+    }
+  }, [searchParams, setFormat, setSelectedLayout, setSelectedTemplate, setData]);
+
+  // 3. Varsayılan Watermark'ı Yükle
   useEffect(() => {
     const loadDefaultWatermark = async () => {
       if (!defaultWatermarkUrl) {
@@ -447,7 +469,7 @@ export default function Home() {
          
          {/* Scale Değerleri Düşürüldü */}
          <div className="transform-gpu scale-[0.25] md:scale-[0.3] lg:scale-[0.35] xl:scale-[0.4] 2xl:scale-[0.5] transition-all duration-500 shadow-2xl ring-1 ring-white/5 relative z-10 flex-shrink-0 origin-center">
-            <SocialCard ref={cardRef} format={format} data={data} defaultWatermarkUrl={effectiveWatermarkUrl} />
+            <SocialCard ref={cardRef} format={format} data={data} defaultWatermarkUrl={effectiveWatermarkUrl} layout={selectedLayout} />
          </div>
       </div>
 
@@ -474,3 +496,15 @@ const InputGroup = ({ label, children }: { label: string, children: React.ReactN
     {children}
   </div>
 );
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen bg-[#121212] flex items-center justify-center">
+        <div className="text-white text-xl">Yükleniyor...</div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
+  );
+}

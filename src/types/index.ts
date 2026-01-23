@@ -157,7 +157,7 @@ export interface Template {
   id: string;
   name: string;
   description: string;
-  previewImage: string;
+  previewImage?: string; // Optional - will use dynamic preview
   templateType: TemplateType;
   format: SocialFormat;
   layout: TemplateLayout;
@@ -170,9 +170,10 @@ export interface TemplateCardProps {
   id: string;
   name: string;
   description: string;
-  previewImage: string;
+  previewImage?: string; // Optional
   templateType: TemplateType;
   format: SocialFormat;
+  layout: TemplateLayout; // Add layout prop
   tags: string[];
   onSelect: () => void;
 }
