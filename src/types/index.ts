@@ -10,16 +10,42 @@ export interface WpPost {
   featured_media: number;
   _embedded?: {
     'wp:featuredmedia'?: Array<{ source_url: string; code?: string }>;
-    'author'?: Array<{ name: string; avatar_urls?: { '96': string } }>;
+    'author'?: Array<{ 
+      name: string; 
+      avatar_urls?: { '96': string; '48': string }; 
+      id: number;
+      slug: string;
+    }>;
+    'wp:term'?: Array<Array<{
+      id: number;
+      name: string;
+      slug: string;
+      taxonomy: string;
+      // Taxonomy meta (age-group için renk kodu vb.)
+      meta?: {
+        color_code?: string;
+      };
+    }>>;
   };
   acf?: {
-    ingredients?: string[];
+    // Tarif alanları
+    ingredients?: string[] | Array<{ ingredient_name?: string; malzeme?: string }>;
     preparation_time?: string;
     difficulty?: string;
-    chef_title?: string;
-    is_expert_verified?: boolean;
+    
+    // Uzman alanları
     expert_name?: string;
     expert_title?: string;
+    expert_avatar?: string;
+    is_expert_verified?: boolean;
+    expert_note?: string;
+    
+    // Malzeme (Ingredient) alanları
+    season?: string;
+    allergens?: string[];
+    allergy_risk?: string;
+    start_age?: string;
+    benefits?: string;
   };
 }
 
@@ -42,6 +68,15 @@ export interface TemplateData {
   
   // Tarif Detayları
   ingredients?: string[];
+  ageGroup?: string;        // YENİ: "6-9 Ay", "9-12 Ay" vb.
+  ageGroupColor?: string;   // YENİ: "#FF8A65" vb.
+  mealType?: string;        // YENİ: "Kahvaltı", "Ana Yemek" vb.
+  prepTime?: string;        // YENİ: "15 dk"
+  
+  // Malzeme Detayları
+  season?: string;          // YENİ: "Kış", "Yaz", "Tüm Yıl"
+  allergens?: string[];     // YENİ: ["Süt", "Yumurta"]
+  allergyRisk?: string;     // YENİ: "Düşük", "Orta", "Yüksek"
 
   // Kişi Bilgileri
   author: {
@@ -53,6 +88,8 @@ export interface TemplateData {
   expert: {
     name: string;
     title: string;
+    avatarUrl?: string;     // YENİ: Uzman profil fotoğrafı
+    note?: string;          // YENİ: Uzman notu
     isVisible: boolean;
     isVerified: boolean;
   };

@@ -20,6 +20,18 @@ export const API_ENDPOINTS = {
   
   MEDIA: `${WP_API_NAMESPACE}/media`,
   SEARCH: `${KG_API_NAMESPACE}/search`,
+  
+  // Yeni endpoint'ler
+  POSTS_BY_SLUG: (slug: string) => `${WP_API_NAMESPACE}/posts?slug=${slug}&_embed`,
+  RECIPES_BY_SLUG: (slug: string) => `${WP_API_NAMESPACE}/recipes?slug=${slug}&_embed`,
+  INGREDIENTS_BY_SLUG: (slug: string) => `${WP_API_NAMESPACE}/ingredients?slug=${slug}&_embed`,
+  
+  POSTS_BY_ID: (id: number) => `${WP_API_NAMESPACE}/posts/${id}?_embed`,
+  RECIPES_BY_ID: (id: number) => `${WP_API_NAMESPACE}/recipes/${id}?_embed`,
+  INGREDIENTS_BY_ID: (id: number) => `${WP_API_NAMESPACE}/ingredients/${id}?_embed`,
+  
+  // Site ayarları (watermark için)
+  SITE_OPTIONS: `${KG_API_NAMESPACE}/options`,
 };
 
 // Storage Keys
@@ -46,4 +58,20 @@ export const BRAND_COLORS = {
   yellow: '#FFF176',
   dark: '#455A64',
   light: '#FFFBE6',
+};
+
+// Taxonomy slugları
+export const TAXONOMIES = {
+  AGE_GROUP: 'age-group',
+  MEAL_TYPE: 'meal-type',
+  DIET_TYPE: 'diet-type',
+  CATEGORY: 'category',
+  SEASON: 'season',
+};
+
+// Varsayılan değerler
+export const DEFAULTS = {
+  WATERMARK_URL: '/assets/kg-logo.png',
+  PLACEHOLDER_IMAGE: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af',
+  EXPERT_AVATAR: '/assets/expert-placeholder.png',
 };

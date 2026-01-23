@@ -1,84 +1,136 @@
 import { WpPost, TemplateData, TemplateType } from '@/types';
 
+// Yardımcı fonksiyonlar
+const decodeHtmlEntities = (text: string): string => {
+  return text
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+};
+
+const stripHtml = (html: string): string => {
+  return html.replace(/(<([^>]+)>)/gi, '').trim();
+};
+
+const parseIngredients = (post: WpPost): string[] => {
+  if (!post.acf?.ingredients) return [];
+  
+  const raw = post.acf.ingredients;
+  
+  // Check if it's a string
+  if (typeof raw === 'string') {
+    return (raw as string).split('\n').filter(Boolean);
+  }
+  
+  // Check if it's an array
+  if (Array.isArray(raw)) {
+    return raw.map(item => {
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object' && item !== null) {
+        const obj = item as { ingredient_name?: string; malzeme?: string };
+        return obj.ingredient_name || obj.malzeme || '';
+      }
+      return '';
+    }).filter(Boolean);
+  }
+  
+  return [];
+};
+
 export const mapWpPostToTemplate = (post: WpPost): TemplateData => {
   
-  // 1. Görseli Bul
-  let imageUrl = '';
-  const embeddedMedia = post._embedded?.['wp:featuredmedia'];
+  // 1. Taxonomy'leri Parse Et
+  const terms = post._embedded?.['wp:term']?.flat() || [];
   
-  if (embeddedMedia && embeddedMedia[0] && !embeddedMedia[0].code && embeddedMedia[0].source_url) {
-    imageUrl = embeddedMedia[0].source_url;
-  }
-
-  // 2. Yazar
-  let authorName = 'KidsGourmet';
-  let authorAvatar = '';
+  const ageGroupTerm = terms.find(t => t.taxonomy === 'age-group');
+  const mealTypeTerm = terms.find(t => t.taxonomy === 'meal-type');
+  const categoryTerm = terms.find(t => t.taxonomy === 'category');
+  const seasonTerm = terms.find(t => t.taxonomy === 'season');
   
-  if (post._embedded?.['author']?.[0]) {
-    authorName = post._embedded['author'][0].name;
-    authorAvatar = post._embedded['author'][0].avatar_urls?.['96'] || '';
-  }
-
-  // 3. İçerik Temizleme
-  const plainTitle = post.title.rendered.replace(/&amp;/g, '&').replace(/&#8217;/g, "'");
-  const plainExcerpt = post.excerpt?.rendered.replace(/(<([^>]+)>)/gi, "") || "";
-
-  // 4. Şablon Tipi Belirleme
-  let templateType: TemplateType = 'blog'; // Varsayılan
+  // 2. Yazar Bilgilerini Çek
+  const authorData = post._embedded?.['author']?.[0];
+  const authorName = authorData?.name || 'KidsGourmet';
+  const authorAvatar = authorData?.avatar_urls?.['96'] || '';
+  
+  // 3. Uzman Bilgilerini Çek
+  const expertName = post.acf?.expert_name || authorName;
+  const expertTitle = post.acf?.expert_title || 'Beslenme Uzmanı';
+  const expertAvatar = post.acf?.expert_avatar || authorAvatar;
+  const expertNote = post.acf?.expert_note || '';
+  
+  // 4. Görsel URL
+  const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || '';
+  
+  // 5. Şablon Tipini Belirle
+  let templateType: TemplateType = 'blog';
   if (post.type === 'recipe') templateType = 'recipe';
-  if (post.type === 'ingredient') templateType = 'guide'; // Malzemeler 'Rehber' olur
-
-  // 5. Malzemeler (Sadece tarifler için anlamlı)
-  let ingredients: string[] = [];
-  if (post.acf) {
-      if (typeof post.acf.ingredients === 'string') {
-         ingredients = (post.acf.ingredients as string).split('\n');
-      } else if (Array.isArray(post.acf.ingredients)) {
-         ingredients = post.acf.ingredients.map((item: any) => item.ingredient_name || item.malzeme || item); 
-      }
+  if (post.type === 'ingredient') templateType = 'guide';
+  
+  // 6. Kategori/Etiket Belirle
+  let category = 'KidsGourmet';
+  if (templateType === 'recipe' && ageGroupTerm) {
+    category = ageGroupTerm.name;
+  } else if (templateType === 'guide') {
+    category = 'Beslenme Rehberi';
+  } else if (categoryTerm) {
+    category = categoryTerm.name;
   }
-  // Fallback: Content içinden liste çekme
-  if (ingredients.length === 0 && post.content?.rendered && typeof window !== 'undefined') {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(post.content.rendered, 'text/html');
-    const listItems = doc.querySelectorAll('ul li, ol li');
-    if (listItems.length > 0) {
-      listItems.forEach((li, index) => {
-        if (index < 6) ingredients.push(li.textContent || '');
-      });
-    }
-  }
-
+  
+  // 7. Malzemeleri Parse Et
+  const ingredients = parseIngredients(post);
+  
+  // 8. Alerjen Bilgilerini Parse Et
+  const allergens = post.acf?.allergens || [];
+  
   return {
     id: post.id,
-    templateType: templateType,
-    title: plainTitle,
-    excerpt: plainExcerpt.slice(0, 150) + (plainExcerpt.length > 150 ? '...' : ''), // Uzun özetleri kırp
+    templateType,
+    title: decodeHtmlEntities(post.title.rendered),
+    excerpt: stripHtml(post.excerpt?.rendered || '').slice(0, 150),
     image: imageUrl,
-    category: post.type === 'ingredient' ? 'Beslenme Rehberi' : 'KidsGourmet',
+    category,
     
-    ingredients: ingredients.length > 0 ? ingredients : [],
+    // Tarif detayları
+    ingredients,
+    ageGroup: ageGroupTerm?.name || '',
+    ageGroupColor: ageGroupTerm?.meta?.color_code || '#FF8A65',
+    mealType: mealTypeTerm?.name || '',
+    prepTime: post.acf?.preparation_time || '',
     
+    // Malzeme detayları
+    season: seasonTerm?.name || post.acf?.season || '',
+    allergens,
+    allergyRisk: post.acf?.allergy_risk || '',
+    
+    // Yazar
     author: {
-        name: authorName,
-        avatarUrl: authorAvatar,
-        isVisible: true
-    },
-
-    expert: {
-      name: post.acf?.expert_name || authorName,
-      title: post.acf?.expert_title || 'Beslenme Uzmanı',
+      name: authorName,
+      avatarUrl: authorAvatar,
       isVisible: true,
-      isVerified: post.acf?.is_expert_verified || true
     },
-
+    
+    // Uzman
+    expert: {
+      name: expertName,
+      title: expertTitle,
+      avatarUrl: expertAvatar,
+      note: expertNote,
+      isVisible: true,
+      isVerified: post.acf?.is_expert_verified ?? true,
+    },
+    
+    // Watermark (varsayılan)
     watermark: {
-      isVisible: true, // Varsayılan açık gelsin
-      url: '/assets/logo-placeholder.png', // Logo yoksa placeholder
+      isVisible: true,
+      url: '', // Boş bırak, component'te default kullanılacak
       position: 'top-right',
       opacity: 1,
-      scale: 1
+      scale: 1,
     },
-    theme: 'modern'
+    
+    theme: 'modern',
   };
 };
