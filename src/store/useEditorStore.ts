@@ -99,7 +99,8 @@ export const useEditorStore = create<EditorState>()(
       partialize: (state) => ({ 
         format: state.format,
         watermark: state.data.watermark,
-        selectedLayout: state.selectedLayout
+        selectedLayout: state.selectedLayout,
+        selectedTemplate: state.selectedTemplate
       }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<EditorState & { watermark: TemplateData['watermark'] }>;
@@ -107,6 +108,7 @@ export const useEditorStore = create<EditorState>()(
           ...currentState,
           format: persisted.format || currentState.format,
           selectedLayout: persisted.selectedLayout || currentState.selectedLayout,
+          selectedTemplate: persisted.selectedTemplate || currentState.selectedTemplate,
           data: {
             ...currentState.data,
             watermark: persisted.watermark || currentState.data.watermark
