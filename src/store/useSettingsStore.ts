@@ -28,7 +28,7 @@ interface SettingsState {
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       defaultWatermarkUrl: '',
       watermarkPresets: [],
       theme: 'dark',

@@ -12,7 +12,7 @@ import { toPng } from 'html-to-image';
 import { 
   Download, RefreshCcw, Instagram, Image as ImageIcon, 
   Search, Type, Upload, LogOut, LayoutTemplate, Palette, BookOpen, 
-  ChefHat, FileText, ImagePlus, RotateCcw
+  ChefHat, FileText, RotateCcw
 } from 'lucide-react';
 import { STORAGE_KEYS, WATERMARK_POSITIONS, DEFAULTS } from '@/lib/constants';
 
@@ -170,13 +170,13 @@ export default function Home() {
                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block ml-1">Şablon Türü</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'recipe', label: 'Tarif', icon: <ChefHat size={16}/> },
-                    { id: 'blog', label: 'Blog', icon: <FileText size={16}/> },
-                    { id: 'guide', label: 'Rehber', icon: <BookOpen size={16}/> }
+                    { id: 'recipe' as const, label: 'Tarif', icon: <ChefHat size={16}/> },
+                    { id: 'blog' as const, label: 'Blog', icon: <FileText size={16}/> },
+                    { id: 'guide' as const, label: 'Rehber', icon: <BookOpen size={16}/> }
                   ].map(type => (
                     <button 
                       key={type.id}
-                      onClick={() => setData({ templateType: type.id as any })}
+                      onClick={() => setData({ templateType: type.id })}
                       className={`flex flex-col items-center justify-center gap-2 py-3 rounded-xl border transition-all ${data.templateType === type.id ? 'bg-[#FF7F3F]/10 border-[#FF7F3F] text-[#FF7F3F]' : 'bg-white/5 border-transparent text-gray-400 hover:bg-white/10'}`}
                     >
                       {type.icon}
@@ -338,7 +338,7 @@ export default function Home() {
                         {WATERMARK_POSITIONS.map((pos) => (
                           <button
                             key={pos.id}
-                            onClick={() => setWatermark({ position: pos.id as any })}
+                            onClick={() => setWatermark({ position: pos.id as WatermarkPosition })}
                             className={`py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${
                               data.watermark.position === pos.id
                                 ? 'bg-[#FF7F3F] text-white'
@@ -432,20 +432,13 @@ export default function Home() {
 
 // --- Alt Bileşenler & Stiller ---
 
-interface PosBtnProps {
-  pos: WatermarkPosition | 'center';
-  active: string;
-  onClick: (p: WatermarkPosition) => void;
-  icon?: React.ReactNode;
-}
-
 // HATA DÜZELTİLDİ: React.cloneElement tipi ve prop yapısı
 const NavIcon = ({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) => (
   <button 
     onClick={onClick}
     className={`w-full aspect-square flex flex-col items-center justify-center gap-1.5 rounded-xl transition-all ${active ? 'bg-[#FF7F3F] text-white shadow-lg shadow-orange-900/20' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
   >
-    {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 20 }) : icon}
+    {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ size?: number }>, { size: 20 }) : icon}
     <span className="text-[10px] font-bold tracking-wide">{label}</span>
   </button>
 );
@@ -455,13 +448,4 @@ const InputGroup = ({ label, children }: { label: string, children: React.ReactN
     <label className="text-xs font-bold text-gray-500 uppercase mb-2 block ml-1">{label}</label>
     {children}
   </div>
-);
-
-const PosBtn = ({ pos, active, onClick, icon }: PosBtnProps) => (
-  <button 
-    onClick={() => onClick(pos as WatermarkPosition)}
-    className={`w-full aspect-square rounded flex items-center justify-center transition-colors border ${active === pos ? 'bg-[#FF7F3F] border-[#FF7F3F] text-white' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
-  >
-    {icon || <div className={`w-1.5 h-1.5 rounded-full ${active === pos ? 'bg-white' : 'bg-gray-500'}`}/>}
-  </button>
 );

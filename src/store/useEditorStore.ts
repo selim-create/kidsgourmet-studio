@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { TemplateData, SocialFormat, WatermarkPosition } from '@/types';
+import { TemplateData, SocialFormat } from '@/types';
 import { DEFAULTS } from '@/lib/constants';
 
 interface EditorState {
@@ -56,7 +56,7 @@ const DEFAULT_DATA: TemplateData = {
 
 export const useEditorStore = create<EditorState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       data: DEFAULT_DATA,
       format: 'story',
       

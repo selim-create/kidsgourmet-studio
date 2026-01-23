@@ -226,7 +226,11 @@ export const getWatermarkOptions = async (): Promise<Array<{id: number; url: str
     
     const data = await res.json();
     
-    return data.map((item: any) => ({
+    return data.map((item: {
+      id: number;
+      source_url: string;
+      title?: { rendered?: string };
+    }) => ({
       id: item.id,
       url: item.source_url,
       title: item.title?.rendered || 'Logo',
