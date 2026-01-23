@@ -32,6 +32,14 @@ const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data }
 
   const backgroundUrl = getProxyUrl(data.image);
 
+  // Alerji risk seviyesi renk sınıfı
+  const getAllergyRiskColor = (risk?: string) => {
+    if (!risk) return 'bg-yellow-500';
+    if (risk === 'Yüksek' || risk.toLowerCase().includes('high')) return 'bg-red-600';
+    if (risk === 'Orta' || risk.toLowerCase().includes('medium') || risk.toLowerCase().includes('orta')) return 'bg-orange-500';
+    return 'bg-yellow-500';
+  };
+
   // Filigran Pozisyonu
   const getWatermarkPosition = () => {
     switch (data.watermark.position) {
@@ -185,7 +193,7 @@ const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data }
                   {data.expert.note && (
                     <div className="mt-2 pt-4 border-t border-white/20">
                        <p className="text-[24px] text-gray-200 leading-relaxed italic">
-                         &ldquo;{data.expert.note}&rdquo;
+                         {`"${data.expert.note}"`}
                        </p>
                     </div>
                   )}
@@ -255,7 +263,7 @@ const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data }
                       </div>
                    </div>
                    <p className="text-[22px] text-gray-200 leading-relaxed italic text-left">
-                     &ldquo;{data.expert.note}&rdquo;
+                     {`"${data.expert.note}"`}
                    </p>
                 </div>
              )}
@@ -288,11 +296,7 @@ const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data }
                      
                      {/* Allergy Risk Level */}
                      {data.allergyRisk && (
-                       <div className={`px-6 py-3 rounded-full text-[24px] font-bold text-white shadow-lg flex items-center gap-2 ${
-                         data.allergyRisk === 'Yüksek' ? 'bg-red-600' :
-                         data.allergyRisk === 'Orta' ? 'bg-orange-500' :
-                         'bg-yellow-500'
-                       }`}>
+                       <div className={`px-6 py-3 rounded-full text-[24px] font-bold text-white shadow-lg flex items-center gap-2 ${getAllergyRiskColor(data.allergyRisk)}`}>
                          <AlertTriangle size={24} />
                          Risk: {data.allergyRisk}
                        </div>
@@ -338,7 +342,7 @@ const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data }
                       </div>
                    </div>
                    <p className="text-[24px] text-gray-200 leading-relaxed italic">
-                     &ldquo;{data.expert.note}&rdquo;
+                     {`"${data.expert.note}"`}
                    </p>
                 </div>
               )}
