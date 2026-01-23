@@ -91,7 +91,7 @@ export const searchContent = async (
   if (type === 'posts') endpoint = API_ENDPOINTS.POSTS;
   if (type === 'ingredients') endpoint = API_ENDPOINTS.INGREDIENTS;
 
-  const url = `${API_BASE_URL}${endpoint}?search=${query}&_embed&per_page=10`;
+  const url = `${API_BASE_URL}${endpoint}?search=${query}&_embed=age-group,meal-type,season,category&per_page=10`;
 
   try {
     const res = await fetch(url, { headers: getHeaders() });

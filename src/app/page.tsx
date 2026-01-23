@@ -4,15 +4,16 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import SocialCard from '@/components/SocialCard';
 import SearchPanel from '@/components/SearchPanel';
+import ImageLibrary from '@/components/ImageLibrary';
 import { useEditorStore, useSettingsStore } from '@/store';
 import { mapWpPostToTemplate } from '@/lib/utils';
 import { getDefaultWatermark } from '@/services/api';
-import { WpPost, WatermarkPosition } from '@/types';
+import { WpPost, WatermarkPosition, StockImage } from '@/types';
 import { toPng } from 'html-to-image';
 import { 
   Download, RefreshCcw, Instagram, Image as ImageIcon, 
   Search, Type, Upload, LogOut, LayoutTemplate, Palette, BookOpen, 
-  ChefHat, FileText, RotateCcw
+  ChefHat, FileText, RotateCcw, ImagePlus
 } from 'lucide-react';
 import { STORAGE_KEYS, WATERMARK_POSITIONS, DEFAULTS } from '@/lib/constants';
 
@@ -26,7 +27,7 @@ export default function Home() {
   const { defaultWatermarkUrl, setDefaultWatermark } = useSettingsStore();
   
   // Local State (UI only)
-  const [activeTab, setActiveTab] = React.useState<'search' | 'edit' | 'design'>('search');
+  const [activeTab, setActiveTab] = React.useState<'search' | 'edit' | 'design' | 'library'>('search');
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
 
@@ -59,6 +60,12 @@ export default function Home() {
     }
     loadFromPost(mapped);
     setActiveTab('edit');
+  };
+
+  // 3b. Image Library Selection
+  const handleImageSelect = (image: StockImage) => {
+    setData({ image: image.url });
+    setActiveTab('design');
   };
 
   // 4. Görsel Yükleme
@@ -125,6 +132,7 @@ export default function Home() {
         
         <div className="flex flex-col gap-4 w-full px-2">
           <NavIcon icon={<Search />} label="Ara" active={activeTab === 'search'} onClick={() => setActiveTab('search')} />
+          <NavIcon icon={<ImagePlus />} label="Görsel" active={activeTab === 'library'} onClick={() => setActiveTab('library')} />
           <NavIcon icon={<Type />} label="İçerik" active={activeTab === 'edit'} onClick={() => setActiveTab('edit')} />
           <NavIcon icon={<Palette />} label="Tasarım" active={activeTab === 'design'} onClick={() => setActiveTab('design')} />
         </div>
@@ -151,6 +159,7 @@ export default function Home() {
         <div className="p-6 border-b border-white/5">
           <h2 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
             {activeTab === 'search' && <><Search size={18} className="text-[#FF7F3F]"/> İçerik Kaynağı</>}
+            {activeTab === 'library' && <><ImagePlus size={18} className="text-[#FF7F3F]"/> Görsel Kütüphanesi</>}
             {activeTab === 'edit' && <><Type size={18} className="text-[#FF7F3F]"/> İçerik Düzenle</>}
             {activeTab === 'design' && <><Palette size={18} className="text-[#FF7F3F]"/> Görsel & Ayarlar</>}
           </h2>
@@ -161,6 +170,11 @@ export default function Home() {
           {/* TAB: ARAMA */}
           {activeTab === 'search' && (
             <SearchPanel onSelect={handleContentSelect} />
+          )}
+
+          {/* TAB: GÖRSEL KÜTÜPHANESİ */}
+          {activeTab === 'library' && (
+            <ImageLibrary onSelect={handleImageSelect} defaultQuery="healthy food" />
           )}
 
           {/* TAB: DÜZENLEME */}

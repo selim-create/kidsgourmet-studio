@@ -26,6 +26,11 @@ export default function SearchPanel({ onSelect }: SearchPanelProps) {
   const [inputMode, setInputMode] = useState<InputMode>('search');
   const [error, setError] = useState('');
   const [idPostType, setIdPostType] = useState<'recipes' | 'posts' | 'ingredients'>('recipes');
+  
+  // Advanced Filters
+  const [ageGroupFilter, setAgeGroupFilter] = useState('');
+  const [mealTypeFilter, setMealTypeFilter] = useState('');
+  const [seasonFilter, setSeasonFilter] = useState('');
 
   // Sonuçları post type'a göre grupla
   const groupedResults: GroupedResults = {
@@ -134,6 +139,51 @@ export default function SearchPanel({ onSelect }: SearchPanelProps) {
           >
             <FileText size={12} /> Yazı
           </button>
+        </div>
+      )}
+
+      {/* Advanced Filters - only in search mode for recipes or ingredients */}
+      {inputMode === 'search' && (activeTab === 'recipes' || activeTab === 'all') && (
+        <div className="flex gap-2">
+          <select 
+            value={ageGroupFilter} 
+            onChange={(e) => setAgeGroupFilter(e.target.value)}
+            className="flex-1 text-xs py-1.5 px-2 rounded bg-gray-800 text-gray-300 border border-gray-700 focus:border-orange-500 outline-none"
+          >
+            <option value="">Tüm Yaş Grupları</option>
+            <option value="6-9-ay">6-9 Ay</option>
+            <option value="9-12-ay">9-12 Ay</option>
+            <option value="1-3-yas">1-3 Yaş</option>
+            <option value="3-6-yas">3-6 Yaş</option>
+          </select>
+          <select 
+            value={mealTypeFilter} 
+            onChange={(e) => setMealTypeFilter(e.target.value)}
+            className="flex-1 text-xs py-1.5 px-2 rounded bg-gray-800 text-gray-300 border border-gray-700 focus:border-orange-500 outline-none"
+          >
+            <option value="">Tüm Öğünler</option>
+            <option value="kahvalti">Kahvaltı</option>
+            <option value="ana-yemek">Ana Yemek</option>
+            <option value="atistirmalik">Atıştırmalık</option>
+          </select>
+        </div>
+      )}
+
+      {/* Season Filter for Ingredients */}
+      {inputMode === 'search' && activeTab === 'ingredients' && (
+        <div className="flex gap-2">
+          <select 
+            value={seasonFilter} 
+            onChange={(e) => setSeasonFilter(e.target.value)}
+            className="w-full text-xs py-1.5 px-2 rounded bg-gray-800 text-gray-300 border border-gray-700 focus:border-orange-500 outline-none"
+          >
+            <option value="">Tüm Mevsimler</option>
+            <option value="ilkbahar">İlkbahar</option>
+            <option value="yaz">Yaz</option>
+            <option value="sonbahar">Sonbahar</option>
+            <option value="kis">Kış</option>
+            <option value="tum-yil">Tüm Yıl</option>
+          </select>
         </div>
       )}
 

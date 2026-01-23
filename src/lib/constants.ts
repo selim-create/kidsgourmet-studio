@@ -93,3 +93,15 @@ export const QUICK_PRESETS = [
   { id: 'yaz', name: 'Yaz Özel', colors: { primary: '#FF9800', secondary: '#03A9F4' } },
   { id: 'kis', name: 'Kış Özel', colors: { primary: '#1976D2', secondary: '#E3F2FD' } },
 ];
+
+// Stock Image API Configuration
+export const STOCK_IMAGE_CONFIG = {
+  PEXELS: {
+    BASE_URL: 'https://api.pexels.com/v1',
+    PER_PAGE: 15,
+  },
+  UNSPLASH: {
+    BASE_URL: 'https://api.unsplash.com',
+    PER_PAGE: 15,
+  }
+};

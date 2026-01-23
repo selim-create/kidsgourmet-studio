@@ -49,6 +49,21 @@ export interface WpPost {
   };
 }
 
+// Stock Image API Types
+export interface StockImage {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+  photographer: string;
+  photographerUrl: string;
+  source: 'pexels' | 'unsplash';
+  width: number;
+  height: number;
+  alt: string;
+}
+
+export type ImageLibrarySource = 'pexels' | 'unsplash' | 'all';
+
 // Şablon Tipleri (GÜNCELLENDİ: 'quote' gitti, 'guide' geldi)
 export type TemplateType = 'recipe' | 'blog' | 'guide';
 
@@ -77,6 +92,9 @@ export interface TemplateData {
   season?: string;          // YENİ: "Kış", "Yaz", "Tüm Yıl"
   allergens?: string[];     // YENİ: ["Süt", "Yumurta"]
   allergyRisk?: string;     // YENİ: "Düşük", "Orta", "Yüksek"
+  startAge?: string;        // YENİ: Malzemeler için başlangıç yaşı
+  benefits?: string;        // YENİ: Sağlık faydaları
+  difficulty?: string;      // YENİ: Tarif zorluk seviyesi
 
   // Kişi Bilgileri
   author: {
