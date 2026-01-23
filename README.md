@@ -1,4 +1,33 @@
+# KidsGourmet Studio
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```env
+# WordPress API
+NEXT_PUBLIC_API_URL=https://api.kidsgourmet.com.tr/wp-json
+
+# Stock Image APIs (optional - for Image Library feature)
+NEXT_PUBLIC_PEXELS_API_KEY=your_pexels_api_key
+NEXT_PUBLIC_UNSPLASH_ACCESS_KEY=your_unsplash_access_key
+```
+
+### Getting API Keys
+
+**Pexels API:**
+1. Sign up at [Pexels](https://www.pexels.com/api/)
+2. Get your free API key from the dashboard
+3. Add it to `NEXT_PUBLIC_PEXELS_API_KEY`
+
+**Unsplash API:**
+1. Sign up at [Unsplash Developers](https://unsplash.com/developers)
+2. Create a new application
+3. Copy the Access Key and add it to `NEXT_PUBLIC_UNSPLASH_ACCESS_KEY`
+
+Note: The Image Library feature will work gracefully without API keys, but no images will be returned.
 
 ## Getting Started
 
