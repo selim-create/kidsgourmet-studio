@@ -14,6 +14,17 @@ const getHeaders = () => {
   return headers;
 };
 
+// Type definition for taxonomy terms
+type TaxonomyTerm = {
+  id: number;
+  name: string;
+  slug: string;
+  taxonomy?: string;
+  meta?: {
+    color_code?: string;
+  };
+};
+
 // Yardımcı: Medya bilgisini ID ile çek
 const getMediaById = async (mediaId: number) => {
   if (!mediaId) return null;
@@ -37,7 +48,7 @@ const getMediaById = async (mediaId: number) => {
 
 // Yardımcı: Yazar bilgisini ID ile çek
 const getAuthorById = async (authorId: number) => {
-  if (!authorId) return null;
+  if (!authorId || authorId < 1) return null;
   const url = `${API_BASE_URL}/wp/v2/users/${authorId}`;
   
   try {
@@ -59,7 +70,7 @@ const getTermsByPostId = async (postId: number, postType: string) => {
   };
   
   const postTaxonomies = taxonomies[postType] || taxonomies['posts'];
-  const allTerms: Array<{id: number; name: string; slug: string; taxonomy: string; meta?: {color_code?: string}}> = [];
+  const allTerms: TaxonomyTerm[] = [];
   
   for (const taxonomy of postTaxonomies) {
     try {
@@ -67,7 +78,7 @@ const getTermsByPostId = async (postId: number, postType: string) => {
       const res = await fetch(url, { headers: getHeaders() });
       if (res.ok) {
         const terms = await res.json();
-        allTerms.push(...terms.map((t: {id: number; name: string; slug: string; meta?: {color_code?: string}}) => ({ ...t, taxonomy })));
+        allTerms.push(...terms.map((t: TaxonomyTerm) => ({ ...t, taxonomy })));
       }
     } catch (error) {
       console.error(`Taxonomy fetch error for ${taxonomy}:`, error);
@@ -111,7 +122,8 @@ const hydratePostData = async (posts: WpPost[]): Promise<WpPost[]> => {
     }
 
     // 2. Yazar bilgisini tamamla
-    const hasAuthor = post._embedded?.author && post._embedded.author.length > 0;
+    const embeddedAuthor = updatedPost._embedded?.author;
+    const hasAuthor = embeddedAuthor && embeddedAuthor.length > 0;
     if (!hasAuthor && post.author) {
       const author = await getAuthorById(post.author);
       if (author) {
@@ -126,17 +138,20 @@ const hydratePostData = async (posts: WpPost[]): Promise<WpPost[]> => {
     }
 
     // 3. Taxonomy term'lerini tamamla
-    const hasTerms = post._embedded?.['wp:term'] && post._embedded['wp:term'].length > 0;
+    const embeddedTerms = updatedPost._embedded?.['wp:term'];
+    const hasTerms = embeddedTerms && embeddedTerms.length > 0;
     if (!hasTerms && post.id && post.type) {
       const terms = await getTermsByPostId(post.id, post.type);
       if (terms.length > 0) {
         // Taxonomy'lere göre grupla
-        const groupedTerms: Record<string, Array<{id: number; name: string; slug: string; taxonomy: string; meta?: {color_code?: string}}>> = {};
+        const groupedTerms: Record<string, TaxonomyTerm[]> = {};
         terms.forEach(term => {
-          if (!groupedTerms[term.taxonomy]) {
+          if (term.taxonomy && !groupedTerms[term.taxonomy]) {
             groupedTerms[term.taxonomy] = [];
           }
-          groupedTerms[term.taxonomy].push(term);
+          if (term.taxonomy) {
+            groupedTerms[term.taxonomy].push(term);
+          }
         });
         
         // wp:term formatında düzenle
