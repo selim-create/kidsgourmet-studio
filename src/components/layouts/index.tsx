@@ -17,96 +17,143 @@ interface LayoutProps {
   getProxyUrl: (url: string) => string;
 }
 
+// Story format için safe area sabitleri
+const STORY_SAFE_AREA = {
+  top: 280,    // px - status bar + header
+  bottom: 300, // px - reply bar + swipe area  
+  sides: 48,   // px - yan kenarlar
+};
+
 // Modern Layout - Full screen image with gradient overlay
-export const ModernLayout: React.FC<LayoutProps> = ({ data, format, backgroundUrl, titleSize, subTitleSize, getProxyUrl }) => (
-  <>
-    {/* Content at bottom */}
-    <div className="absolute inset-0 p-16 flex flex-col justify-end z-30 pb-24">
-      {data.templateType === 'recipe' && (
-        <div className="flex flex-col gap-8">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 mb-6 flex-wrap">
-              {data.ageGroup && (
+export const ModernLayout: React.FC<LayoutProps> = ({ data, format, backgroundUrl, titleSize, subTitleSize, getProxyUrl }) => {
+  // Story için güvenli padding, Post için normal
+  const safeTop = format === 'story' ? 'pt-[280px]' : 'pt-12';
+  const safeBottom = format === 'story' ? 'pb-[300px]' : 'pb-12';
+  const safeSides = format === 'story' ? 'px-12' : 'px-10';
+  
+  return (
+    <>
+      {/* Content at bottom - safe area içinde */}
+      <div className={`absolute inset-0 ${safeSides} ${safeTop} ${safeBottom} flex flex-col justify-end z-30`}>
+        {data.templateType === 'recipe' && (
+          <div className="flex flex-col gap-6">
+            {/* Badges */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {data.visibility?.ageGroup && data.ageGroup && (
                 <div 
-                  className="px-6 py-3 rounded-full text-[24px] font-bold text-white shadow-lg flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-full text-[22px] font-bold text-white shadow-lg flex items-center gap-2"
                   style={{ backgroundColor: data.ageGroupColor || '#FF8A65' }}
                 >
-                  <Baby size={24} />
+                  <Baby size={22} />
                   {data.ageGroup}
                 </div>
               )}
-              {data.mealType && (
-                <div className="bg-white/20 backdrop-blur-md border border-white/30 px-6 py-3 rounded-full text-[24px] font-bold text-white shadow-lg flex items-center gap-2">
-                  <ChefHat size={24} />
+              {data.visibility?.mealType && data.mealType && (
+                <div className="bg-white/20 backdrop-blur-md border border-white/30 px-5 py-2.5 rounded-full text-[22px] font-bold text-white shadow-lg flex items-center gap-2">
+                  <ChefHat size={22} />
                   {data.mealType}
                 </div>
               )}
-              {data.prepTime && (
-                <div className="bg-white/20 backdrop-blur-md border border-white/30 px-6 py-3 rounded-full text-[24px] font-bold text-white shadow-lg flex items-center gap-2">
-                  <Clock size={24} />
+              {data.visibility?.prepTime && data.prepTime && (
+                <div className="bg-white/20 backdrop-blur-md border border-white/30 px-5 py-2.5 rounded-full text-[22px] font-bold text-white shadow-lg flex items-center gap-2">
+                  <Clock size={22} />
                   {data.prepTime}
                 </div>
               )}
             </div>
-            <div className="w-32 h-2 bg-[#FF7F3F] rounded-full shadow-lg mb-4"></div>
-            <h1 className={`${titleSize} font-bold leading-[1.1] drop-shadow-xl text-balance`}>
+            
+            {/* Accent Line */}
+            <div className="w-24 h-1.5 bg-[#FF7F3F] rounded-full"></div>
+            
+            {/* Title */}
+            <h1 className={`${titleSize} font-bold leading-[1.1] drop-shadow-xl`}>
               {data.title}
             </h1>
+            
+            {/* Ingredients */}
+            {data.visibility?.ingredients && data.ingredients && data.ingredients.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {data.ingredients.slice(0, format === 'story' ? 5 : 4).map((ing, i) => (
+                  <span key={i} className="bg-white/10 backdrop-blur-md border border-white/20 text-[20px] px-4 py-2 rounded-xl text-white font-medium">
+                    {ing}
+                  </span>
+                ))}
+                {data.ingredients.length > (format === 'story' ? 5 : 4) && (
+                  <span className="bg-[#FF7F3F] text-white text-[20px] px-4 py-2 rounded-xl font-bold">
+                    +{data.ingredients.length - (format === 'story' ? 5 : 4)}
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {/* Expert Card */}
+            {data.expert.isVisible && (
+              <div className="flex items-center gap-3 mt-4 p-4 bg-black/40 backdrop-blur-lg rounded-2xl border border-white/10">
+                {data.expert.avatarUrl ? (
+                  <img src={getProxyUrl(data.expert.avatarUrl)} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-[#FF7F3F]" />
+                ) : (
+                  <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                    <User size={24} />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[22px]">{data.expert.name}</span>
+                    {data.expert.isVerified && (
+                      <CheckCircle2 size={20} className="text-green-400" />
+                    )}
+                  </div>
+                  <span className="text-[16px] text-gray-300">{data.expert.title}</span>
+                </div>
+              </div>
+            )}
           </div>
-          {data.ingredients && data.ingredients.length > 0 && (
-            <div className="flex flex-wrap gap-4 mt-4">
-              {data.ingredients.slice(0, format === 'story' ? 6 : 4).map((ing, i) => (
-                <span key={i} className="bg-white/10 backdrop-blur-md border border-white/20 text-[26px] px-6 py-3 rounded-2xl text-white font-medium shadow-lg">
-                  {ing}
-                </span>
-              ))}
-              {data.ingredients.length > (format === 'story' ? 6 : 4) && (
-                <span className="bg-[#FF7F3F] text-white text-[26px] px-5 py-3 rounded-2xl font-bold shadow-lg">
-                  +{data.ingredients.length - (format === 'story' ? 6 : 4)}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-      {data.templateType === 'blog' && (
-        <div className="flex flex-col items-center text-center gap-8 mb-10">
-          <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border-2 border-white/30 shadow-2xl mb-4">
-            <FileText size={48} />
+        )}
+        {data.templateType === 'blog' && (
+          <div className="flex flex-col items-center text-center gap-8 mb-10">
+            {data.visibility?.category && data.category && (
+              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border-2 border-white/30 shadow-2xl mb-4">
+                <FileText size={48} />
+              </div>
+            )}
+            <h1 className={`${titleSize} font-bold leading-[1.1] drop-shadow-2xl max-w-[90%]`}>
+              {data.title}
+            </h1>
+            <div className="w-32 h-1 bg-white/50 rounded-full"></div>
+            {data.visibility?.excerpt && data.excerpt && (
+              <p className={`${subTitleSize} text-gray-100 font-medium leading-relaxed max-w-[90%] drop-shadow-md line-clamp-5`}>
+                {data.excerpt}
+              </p>
+            )}
           </div>
-          <h1 className={`${titleSize} font-bold leading-[1.1] drop-shadow-2xl max-w-[90%]`}>
-            {data.title}
-          </h1>
-          <div className="w-32 h-1 bg-white/50 rounded-full"></div>
-          <p className={`${subTitleSize} text-gray-100 font-medium leading-relaxed max-w-[90%] drop-shadow-md line-clamp-5`}>
-            {data.excerpt}
-          </p>
-        </div>
-      )}
-      {data.templateType === 'guide' && (
-        <div className="mb-8">
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-10 rounded-[40px] shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-3 h-full bg-[#FF7F3F]"></div>
-            <div className="flex items-center gap-4 mb-6 flex-wrap pl-6">
-              {data.season && (
-                <div className="bg-green-500 text-white px-6 py-3 rounded-full text-[24px] font-bold shadow-lg flex items-center gap-2">
-                  <Leaf size={24} />
-                  {data.season}
+        )}
+        {data.templateType === 'guide' && (
+          <div className="mb-8">
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-10 rounded-[40px] shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-3 h-full bg-[#FF7F3F]"></div>
+              {data.visibility?.season && data.season && (
+                <div className="flex items-center gap-4 mb-6 flex-wrap pl-6">
+                  <div className="bg-green-500 text-white px-6 py-3 rounded-full text-[24px] font-bold shadow-lg flex items-center gap-2">
+                    <Leaf size={24} />
+                    {data.season}
+                  </div>
                 </div>
               )}
+              <h1 className={`${titleSize} font-bold text-white mb-6 leading-tight drop-shadow-lg pl-6`}>
+                {data.title}
+              </h1>
+              {data.excerpt && (
+                <p className={`${subTitleSize} text-gray-100 leading-relaxed font-normal pl-6 opacity-95`}>
+                  {data.excerpt}
+                </p>
+              )}
             </div>
-            <h1 className={`${titleSize} font-bold text-white mb-6 leading-tight drop-shadow-lg pl-6`}>
-              {data.title}
-            </h1>
-            <p className={`${subTitleSize} text-gray-100 leading-relaxed font-normal pl-6 opacity-95`}>
-              {data.excerpt}
-            </p>
           </div>
-        </div>
-      )}
-    </div>
-  </>
-);
+        )}
+      </div>
+    </>
+  );
+};
 
 // Classic Layout - Header at top, image in middle, footer at bottom
 export const ClassicLayout: React.FC<LayoutProps> = ({ data, format, titleSize, subTitleSize, getProxyUrl }) => (
@@ -114,12 +161,14 @@ export const ClassicLayout: React.FC<LayoutProps> = ({ data, format, titleSize, 
     {/* Header */}
     <div className="p-10 bg-gradient-to-r from-orange-500 to-red-500">
       <h1 className="text-[56px] font-bold text-white leading-tight">{data.title}</h1>
-      <span className="text-white/90 text-[28px] mt-2 block">{data.category}</span>
+      {data.visibility?.category && data.category && (
+        <span className="text-white/90 text-[28px] mt-2 block">{data.category}</span>
+      )}
     </div>
     
     {/* Content in middle */}
     <div className="flex-1 flex items-end p-16 pb-24">
-      {data.templateType === 'recipe' && data.ingredients && data.ingredients.length > 0 && (
+      {data.templateType === 'recipe' && data.visibility?.ingredients && data.ingredients && data.ingredients.length > 0 && (
         <div className="flex flex-wrap gap-4">
           {data.ingredients.slice(0, 4).map((ing, i) => (
             <span key={i} className="bg-white/20 backdrop-blur-md border border-white/30 text-[24px] px-6 py-3 rounded-2xl text-white font-medium shadow-lg">
@@ -168,7 +217,7 @@ export const DetailedLayout: React.FC<LayoutProps> = ({ data, format, titleSize,
     {/* Top half badges overlay */}
     <div className="relative flex items-start justify-start p-8">
       <div className="flex gap-3 flex-wrap">
-        {data.ageGroup && (
+        {data.visibility?.ageGroup && data.ageGroup && (
           <div 
             className="px-5 py-2 rounded-full text-[22px] font-bold text-white shadow-lg"
             style={{ backgroundColor: data.ageGroupColor || '#FF8A65' }}
@@ -176,7 +225,7 @@ export const DetailedLayout: React.FC<LayoutProps> = ({ data, format, titleSize,
             {data.ageGroup}
           </div>
         )}
-        {data.mealType && (
+        {data.visibility?.mealType && data.mealType && (
           <div className="bg-green-500 px-5 py-2 rounded-full text-[22px] font-bold text-white shadow-lg">
             {data.mealType}
           </div>
@@ -189,7 +238,7 @@ export const DetailedLayout: React.FC<LayoutProps> = ({ data, format, titleSize,
       <div>
         <h1 className="text-[52px] font-bold mb-6 leading-tight">{data.title}</h1>
         
-        {data.ingredients && data.ingredients.length > 0 && (
+        {data.visibility?.ingredients && data.ingredients && data.ingredients.length > 0 && (
           <div className="mb-6">
             <h3 className="text-[20px] uppercase text-gray-400 mb-3 font-bold">Malzemeler</h3>
             <ul className="grid grid-cols-2 gap-2 text-[22px]">
