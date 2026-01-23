@@ -8,7 +8,9 @@ const decodeHtmlEntities = (text: string): string => {
     .replace(/&#8221;/g, '"')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
+    .replace(/&amp;/g, '&')
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8212;/g, '—');
 };
 
 const stripHtml = (html: string): string => {
@@ -20,18 +22,16 @@ const parseIngredients = (post: WpPost): string[] => {
   
   const raw = post.acf.ingredients;
   
-  // Check if it's a string
   if (typeof raw === 'string') {
-    return (raw as string).split('\n').filter(Boolean);
+    return raw.split('\n').filter(Boolean).map(s => s.trim());
   }
   
-  // Check if it's an array
   if (Array.isArray(raw)) {
     return raw.map(item => {
-      if (typeof item === 'string') return item;
+      if (typeof item === 'string') return item.trim();
       if (typeof item === 'object' && item !== null) {
-        const obj = item as { ingredient_name?: string; malzeme?: string };
-        return obj.ingredient_name || obj.malzeme || '';
+        const obj = item as { ingredient_name?: string; malzeme?: string; name?: string };
+        return (obj.ingredient_name || obj.malzeme || obj.name || '').trim();
       }
       return '';
     }).filter(Boolean);
@@ -40,56 +40,91 @@ const parseIngredients = (post: WpPost): string[] => {
   return [];
 };
 
+// Post type'ı normalize et (WordPress bazen plural, bazen singular döner)
+const normalizePostType = (type: string): TemplateType => {
+  const normalized = type.toLowerCase();
+  if (normalized === 'recipe' || normalized === 'recipes') return 'recipe';
+  if (normalized === 'ingredient' || normalized === 'ingredients') return 'guide';
+  return 'blog'; // post, posts, page, vb.
+};
+
 export const mapWpPostToTemplate = (post: WpPost): TemplateData => {
   
   // 1. Taxonomy'leri Parse Et
   const terms = post._embedded?.['wp:term']?.flat() || [];
   
-  const ageGroupTerm = terms.find(t => t.taxonomy === 'age-group');
-  const mealTypeTerm = terms.find(t => t.taxonomy === 'meal-type');
-  const categoryTerm = terms.find(t => t.taxonomy === 'category');
-  const seasonTerm = terms.find(t => t.taxonomy === 'season');
+  // Taxonomy'leri bul - slug veya taxonomy adına göre
+  const findTerm = (taxonomyNames: string[]) => {
+    return terms.find(t => 
+      taxonomyNames.some(name => 
+        t.taxonomy === name || 
+        t.taxonomy?.toLowerCase() === name.toLowerCase()
+      )
+    );
+  };
   
-  // 2. Yazar Bilgilerini Çek
+  const ageGroupTerm = findTerm(['age-group', 'age_group', 'yas-grubu']);
+  const mealTypeTerm = findTerm(['meal-type', 'meal_type', 'ogun-tipi']);
+  const categoryTerm = findTerm(['category', 'kategori']);
+  const seasonTerm = findTerm(['season', 'mevsim']);
+  
+  // 2. Yazar Bilgilerini Çek (Avatar dahil)
   const authorData = post._embedded?.['author']?.[0];
   const authorName = authorData?.name || 'KidsGourmet';
-  const authorAvatar = authorData?.avatar_urls?.['96'] || '';
+  // Avatar URL'lerini kontrol et - 96, 48, veya herhangi biri
+  const authorAvatar = authorData?.avatar_urls?.['96'] || 
+                       authorData?.avatar_urls?.['48'] || 
+                       authorData?.avatar_urls?.['24'] ||
+                       Object.values(authorData?.avatar_urls || {})[0] || 
+                       '';
   
-  // 3. Uzman Bilgilerini Çek
-  const expertName = post.acf?.expert_name || authorName;
+  // 3. Uzman Bilgilerini Çek (ACF'den)
+  const expertName = post.acf?.expert_name || '';
   const expertTitle = post.acf?.expert_title || 'Beslenme Uzmanı';
-  const expertAvatar = post.acf?.expert_avatar || authorAvatar;
+  const expertAvatar = post.acf?.expert_avatar || '';
   const expertNote = post.acf?.expert_note || '';
+  const isExpertVerified = post.acf?.is_expert_verified ?? false;
   
   // 4. Görsel URL
   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || '';
   
   // 5. Şablon Tipini Belirle
-  let templateType: TemplateType = 'blog';
-  if (post.type === 'recipe') templateType = 'recipe';
-  if (post.type === 'ingredient') templateType = 'guide';
+  const templateType = normalizePostType(post.type);
   
-  // 6. Kategori/Etiket Belirle
-  let category = 'KidsGourmet';
-  if (templateType === 'recipe' && ageGroupTerm) {
-    category = ageGroupTerm.name;
+  // 6. CPT'ye Özel Kategori/Etiket Belirle
+  let category = '';
+  if (templateType === 'recipe') {
+    // Tarifler için yaş grubu göster (kategori değil)
+    category = ageGroupTerm?.name || '';
   } else if (templateType === 'guide') {
-    category = 'Beslenme Rehberi';
-  } else if (categoryTerm) {
-    category = categoryTerm.name;
+    // Malzemeler için mevsim veya "Beslenme Rehberi"
+    category = seasonTerm?.name || 'Beslenme Rehberi';
+  } else {
+    // Blog yazıları için kategori
+    category = categoryTerm?.name || 'Blog';
   }
   
   // 7. Malzemeleri Parse Et
   const ingredients = parseIngredients(post);
   
   // 8. Alerjen Bilgilerini Parse Et
-  const allergens = post.acf?.allergens || [];
+  let allergens: string[] = [];
+  if (post.acf?.allergens) {
+    if (Array.isArray(post.acf.allergens)) {
+      allergens = post.acf.allergens.filter(Boolean);
+    } else if (typeof post.acf.allergens === 'string') {
+      allergens = post.acf.allergens.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  
+  // 9. Excerpt/Description
+  const excerpt = stripHtml(post.excerpt?.rendered || post.content?.rendered || '').slice(0, 200);
   
   return {
     id: post.id,
     templateType,
     title: decodeHtmlEntities(post.title.rendered),
-    excerpt: stripHtml(post.excerpt?.rendered || '').slice(0, 150),
+    excerpt,
     image: imageUrl,
     category,
     
@@ -99,33 +134,48 @@ export const mapWpPostToTemplate = (post: WpPost): TemplateData => {
     ageGroupColor: ageGroupTerm?.meta?.color_code || '#FF8A65',
     mealType: mealTypeTerm?.name || '',
     prepTime: post.acf?.preparation_time || '',
+    difficulty: post.acf?.difficulty || '',
     
     // Malzeme detayları
     season: seasonTerm?.name || post.acf?.season || '',
     allergens,
     allergyRisk: post.acf?.allergy_risk || '',
+    startAge: post.acf?.start_age || '',
+    benefits: post.acf?.benefits || '',
     
-    // Yazar
+    // Görünürlük toggle'ları (varsayılan tümü açık)
+    visibility: {
+      ageGroup: true,
+      mealType: true,
+      prepTime: true,
+      ingredients: true,
+      season: true,
+      allergens: true,
+      category: true,
+      excerpt: true,
+    },
+    
+    // Yazar - her zaman doldur
     author: {
       name: authorName,
       avatarUrl: authorAvatar,
-      isVisible: true,
+      isVisible: true, // Varsayılan açık
     },
     
-    // Uzman
+    // Uzman - ACF'de varsa doldur
     expert: {
-      name: expertName,
+      name: expertName || authorName, // Uzman yoksa yazar adını kullan
       title: expertTitle,
-      avatarUrl: expertAvatar,
+      avatarUrl: expertAvatar || authorAvatar, // Uzman avatarı yoksa yazar avatarını kullan
       note: expertNote,
-      isVisible: true,
-      isVerified: post.acf?.is_expert_verified ?? true,
+      isVisible: !!expertName, // Uzman adı varsa göster
+      isVerified: isExpertVerified,
     },
     
     // Watermark (varsayılan)
     watermark: {
       isVisible: true,
-      url: '', // Boş bırak, component'te default kullanılacak
+      url: '',
       position: 'top-right',
       opacity: 1,
       scale: 1,
