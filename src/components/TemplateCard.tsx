@@ -53,7 +53,8 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
   // Container boyutuna göre scale hesapla
   // Story için container yaklaşık 250px genişlik, 444px yükseklik
   // Post için container yaklaşık 250px genişlik, 250px yükseklik
-  const scaleValue = format === 'story' ? 0.23 : 0.23; // 250/1080 ≈ 0.23
+  // Her iki format da aynı genişlik olduğu için scale değeri aynı: 250/1080 ≈ 0.23
+  const scaleValue = 0.23;
   
   const getTypeIcon = () => {
     switch (templateType) {

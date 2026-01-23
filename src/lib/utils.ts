@@ -46,7 +46,8 @@ const normalizePostType = (type: string): TemplateType => {
   const normalized = type.toLowerCase();
   if (normalized === 'recipe' || normalized === 'recipes') return 'recipe';
   if (normalized === 'ingredient' || normalized === 'ingredients') return 'guide';
-  return 'blog'; // post, posts, page, vb.
+  // Diğer tüm tipler (post, posts, page, vb.) blog olarak kabul edilir
+  return 'blog';
 };
 
 export const mapWpPostToTemplate = (post: WpPost): TemplateData => {
@@ -115,6 +116,7 @@ export const mapWpPostToTemplate = (post: WpPost): TemplateData => {
     if (Array.isArray(allergensRaw)) {
       allergens = allergensRaw.filter(Boolean);
     } else if (typeof allergensRaw === 'string') {
+      // Type assertion needed because TypeScript can't narrow union type properly
       const stringAllergens = allergensRaw as string;
       allergens = stringAllergens.split(',').map((s: string) => s.trim()).filter(Boolean);
     }

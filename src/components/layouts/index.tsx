@@ -17,13 +17,6 @@ interface LayoutProps {
   getProxyUrl: (url: string) => string;
 }
 
-// Story format için safe area sabitleri
-const STORY_SAFE_AREA = {
-  top: 280,    // px - status bar + header
-  bottom: 300, // px - reply bar + swipe area  
-  sides: 48,   // px - yan kenarlar
-};
-
 // Modern Layout - Full screen image with gradient overlay
 export const ModernLayout: React.FC<LayoutProps> = ({ data, format, backgroundUrl, titleSize, subTitleSize, getProxyUrl }) => {
   // Story için güvenli padding, Post için normal
