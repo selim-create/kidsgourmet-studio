@@ -23,7 +23,8 @@ const parseIngredients = (post: WpPost): string[] => {
   const raw = post.acf.ingredients;
   
   if (typeof raw === 'string') {
-    return raw.split('\n').filter(Boolean).map(s => s.trim());
+    const stringRaw = raw as string;
+    return stringRaw.split('\n').filter(Boolean).map((s: string) => s.trim());
   }
   
   if (Array.isArray(raw)) {
@@ -72,10 +73,10 @@ export const mapWpPostToTemplate = (post: WpPost): TemplateData => {
   const authorData = post._embedded?.['author']?.[0];
   const authorName = authorData?.name || 'KidsGourmet';
   // Avatar URL'lerini kontrol et - 96, 48, veya herhangi biri
-  const authorAvatar = authorData?.avatar_urls?.['96'] || 
-                       authorData?.avatar_urls?.['48'] || 
-                       authorData?.avatar_urls?.['24'] ||
-                       Object.values(authorData?.avatar_urls || {})[0] || 
+  const avatarUrls = authorData?.avatar_urls;
+  const authorAvatar = avatarUrls?.['96'] || 
+                       avatarUrls?.['48'] || 
+                       (avatarUrls ? Object.values(avatarUrls)[0] : '') || 
                        '';
   
   // 3. Uzman Bilgilerini Çek (ACF'den)
@@ -110,10 +111,12 @@ export const mapWpPostToTemplate = (post: WpPost): TemplateData => {
   // 8. Alerjen Bilgilerini Parse Et
   let allergens: string[] = [];
   if (post.acf?.allergens) {
-    if (Array.isArray(post.acf.allergens)) {
-      allergens = post.acf.allergens.filter(Boolean);
-    } else if (typeof post.acf.allergens === 'string') {
-      allergens = post.acf.allergens.split(',').map(s => s.trim()).filter(Boolean);
+    const allergensRaw = post.acf.allergens;
+    if (Array.isArray(allergensRaw)) {
+      allergens = allergensRaw.filter(Boolean);
+    } else if (typeof allergensRaw === 'string') {
+      const stringAllergens = allergensRaw as string;
+      allergens = stringAllergens.split(',').map((s: string) => s.trim()).filter(Boolean);
     }
   }
   
