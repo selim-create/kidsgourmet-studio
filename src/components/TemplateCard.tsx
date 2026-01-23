@@ -23,7 +23,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
     id: 'preview',
     templateType,
     title: name,
-    image: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=800',
+    image: DEFAULTS.PLACEHOLDER_IMAGE,
     category: templateType === 'recipe' ? '6-9 Ay' : templateType === 'blog' ? 'Blog' : 'Rehber',
     ingredients: templateType === 'recipe' ? ['Havuç', 'Patates', 'Bezelye'] : [],
     excerpt: 'Örnek açıklama metni buraya gelecek.',
@@ -95,9 +95,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
           <div 
             className="absolute top-0 left-0 origin-top-left"
             style={{
-              transform: format === 'story' 
-                ? 'scale(0.16)' // 1080x1920 -> ~173x307 in 9:16 container
-                : 'scale(0.16)', // 1080x1080 -> ~173x173
+              transform: 'scale(0.16)', // Scale down for preview
               transformOrigin: 'top left'
             }}
           >

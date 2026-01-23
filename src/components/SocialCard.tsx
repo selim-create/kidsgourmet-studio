@@ -137,7 +137,7 @@ const SocialCard = forwardRef<HTMLDivElement, SocialCardProps>(({ format, data, 
         </div>
       )}
 
-      {/* --- KATMAN 3: KATEGORİ ROZETİ (Sabit Sol Üst) - Only for non-layout designs --- */}
+      {/* --- KATMAN 3: KATEGORİ ROZETİ (Modern layout only) --- */}
       {layout === 'modern' && (
         <div className="absolute top-12 left-12 z-40">
            <div className="bg-[#4CAF50] text-white px-6 py-3 rounded-full text-2xl font-bold uppercase tracking-widest shadow-xl flex items-center gap-3 border border-white/20 backdrop-blur-md">

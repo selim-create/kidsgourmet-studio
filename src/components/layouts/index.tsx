@@ -109,7 +109,7 @@ export const ModernLayout: React.FC<LayoutProps> = ({ data, format, backgroundUr
 );
 
 // Classic Layout - Header at top, image in middle, footer at bottom
-export const ClassicLayout: React.FC<LayoutProps> = ({ data, format, titleSize, subTitleSize }) => (
+export const ClassicLayout: React.FC<LayoutProps> = ({ data, format, titleSize, subTitleSize, getProxyUrl }) => (
   <div className="absolute inset-0 flex flex-col z-30">
     {/* Header */}
     <div className="p-10 bg-gradient-to-r from-orange-500 to-red-500">
@@ -135,7 +135,7 @@ export const ClassicLayout: React.FC<LayoutProps> = ({ data, format, titleSize, 
       <div className="p-8 bg-black/60 backdrop-blur-lg border-t border-white/10">
         <div className="flex items-center gap-4">
           {data.expert.avatarUrl ? (
-            <img src={data.expert.avatarUrl} alt={data.expert.name} className="w-16 h-16 rounded-full object-cover border-2 border-[#FF7F3F]" />
+            <img src={getProxyUrl(data.expert.avatarUrl)} alt={data.expert.name} className="w-16 h-16 rounded-full object-cover border-2 border-[#FF7F3F]" />
           ) : (
             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-[#FF7F3F] border-2 border-[#FF7F3F]">
               <User size={32} />
