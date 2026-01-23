@@ -2,6 +2,10 @@ import { StockImage, ImageLibrarySource } from '@/types';
 import { STOCK_IMAGE_CONFIG } from '@/lib/constants';
 
 // API Keys from environment variables
+// Note: NEXT_PUBLIC_ prefix is intentional here. Both Pexels and Unsplash
+// are designed for client-side use with public API keys that have built-in
+// rate limiting and domain restrictions. These keys are safe to expose in
+// the client bundle as they are meant for this use case.
 const PEXELS_API_KEY = process.env.NEXT_PUBLIC_PEXELS_API_KEY || '';
 const UNSPLASH_ACCESS_KEY = process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY || '';
 

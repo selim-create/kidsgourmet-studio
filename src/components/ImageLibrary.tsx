@@ -19,9 +19,14 @@ export default function ImageLibrary({ onSelect, defaultQuery = '' }: ImageLibra
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const handleSearch = async (e?: React.FormEvent, resetPage = true) => {
-    e?.preventDefault();
-    
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    // Manually trigger search with nextPage to avoid stale state
+    handleSearchWithPage(nextPage);
+  };
+
+  const handleSearchWithPage = async (currentPage: number) => {
     if (!query.trim()) {
       setError('Lütfen bir arama terimi girin');
       return;
@@ -29,12 +34,6 @@ export default function ImageLibrary({ onSelect, defaultQuery = '' }: ImageLibra
 
     setLoading(true);
     setError('');
-    
-    const currentPage = resetPage ? 1 : page;
-    if (resetPage) {
-      setResults([]);
-      setPage(1);
-    }
 
     try {
       const images = await searchStockImages(query, source, currentPage);
@@ -44,7 +43,7 @@ export default function ImageLibrary({ onSelect, defaultQuery = '' }: ImageLibra
         setResults([]);
         setHasMore(false);
       } else {
-        setResults(prev => resetPage ? images : [...prev, ...images]);
+        setResults(prev => currentPage === 1 ? images : [...prev, ...images]);
         setHasMore(images.length > 0);
       }
     } catch (err) {
@@ -55,10 +54,10 @@ export default function ImageLibrary({ onSelect, defaultQuery = '' }: ImageLibra
     }
   };
 
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    handleSearch(undefined, false);
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setPage(1);
+    handleSearchWithPage(1);
   };
 
   const handleImageSelect = (image: StockImage) => {
@@ -195,6 +194,10 @@ function ImageCard({
       <img
         src={image.thumbnailUrl}
         alt={image.alt}
+        loading="lazy"
+        onError={(e) => {
+          e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23333"/><text x="50%" y="50%" text-anchor="middle" fill="%23666" font-size="14">Image Error</text></svg>';
+        }}
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
       />
 
