@@ -5,6 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import SocialCard from '@/components/SocialCard';
 import SearchPanel from '@/components/SearchPanel';
 import ImageLibrary from '@/components/ImageLibrary';
+import BatchExport from '@/components/BatchExport';
+import CaptionGenerator from '@/components/CaptionGenerator';
+import PresetSelector from '@/components/PresetSelector';
+import MobilePreview from '@/components/MobilePreview';
 import { useEditorStore, useSettingsStore } from '@/store';
 import { mapWpPostToTemplate } from '@/lib/utils';
 import { getDefaultWatermark } from '@/services/api';
@@ -13,12 +17,13 @@ import { toPng } from 'html-to-image';
 import { 
   Download, RefreshCcw, Instagram, Image as ImageIcon, 
   Search, Type, Upload, LogOut, LayoutTemplate, Palette, BookOpen, 
-  ChefHat, FileText, RotateCcw, ImagePlus, Layers, User
+  ChefHat, FileText, RotateCcw, ImagePlus, Layers, User, Package, MessageSquare, Smartphone
 } from 'lucide-react';
 import Link from 'next/link';
 import { STORAGE_KEYS, WATERMARK_POSITIONS, DEFAULTS } from '@/lib/constants';
 import { ALL_TEMPLATES } from '@/lib/templates';
 import { Toggle, ToggleField } from '@/components/ui/Toggle';
+import { ThemePreset } from '@/lib/presets';
 
 
 function HomeContent() {
@@ -34,6 +39,13 @@ function HomeContent() {
   const [activeTab, setActiveTab] = React.useState<'search' | 'edit' | 'design' | 'library'>('search');
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  
+  // New Modal States for Phase 3 + 4
+  const [showBatchExport, setShowBatchExport] = React.useState(false);
+  const [showCaptionGenerator, setShowCaptionGenerator] = React.useState(false);
+  const [showPresetSelector, setShowPresetSelector] = React.useState(false);
+  const [showMobilePreview, setShowMobilePreview] = React.useState(false);
+  const [selectedTheme, setSelectedTheme] = React.useState<string>('kidsgourmet');
 
   // 1. Auth Kontrolü
   useEffect(() => {
@@ -135,6 +147,13 @@ function HomeContent() {
     if (confirm('Tüm değişiklikler sıfırlanacak. Emin misiniz?')) {
       resetData();
     }
+  };
+
+  // 9. Theme Selection Handler
+  const handleThemeSelect = (preset: ThemePreset) => {
+    setSelectedTheme(preset.id);
+    // Note: Full theme integration would require updating SocialCard component
+    // For now, this just tracks the selected theme
   };
 
   const handleLogout = () => {
@@ -642,7 +661,8 @@ function HomeContent() {
 
         </div>
 
-        <div className="p-6 border-t border-white/5 bg-[#1E1E1E]">
+        <div className="p-6 border-t border-white/5 bg-[#1E1E1E] space-y-3">
+           {/* Main Download Button */}
            <button 
              onClick={handleDownload}
              disabled={isGenerating}
@@ -651,6 +671,38 @@ function HomeContent() {
              {isGenerating ? <RefreshCcw className="animate-spin" /> : <Download />}
              GÖRSELİ İNDİR
            </button>
+
+           {/* New Feature Buttons */}
+           <div className="grid grid-cols-2 gap-2">
+             <button
+               onClick={() => setShowBatchExport(true)}
+               className="bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-all"
+             >
+               <Package size={16} />
+               Toplu İndir
+             </button>
+             <button
+               onClick={() => setShowCaptionGenerator(true)}
+               className="bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-all"
+             >
+               <MessageSquare size={16} />
+               Caption
+             </button>
+             <button
+               onClick={() => setShowPresetSelector(true)}
+               className="bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-all"
+             >
+               <Palette size={16} />
+               Temalar
+             </button>
+             <button
+               onClick={() => setShowMobilePreview(true)}
+               className="bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-all"
+             >
+               <Smartphone size={16} />
+               Önizle
+             </button>
+           </div>
         </div>
       </aside>
 
@@ -664,6 +716,39 @@ function HomeContent() {
             <SocialCard ref={cardRef} format={format} data={data} defaultWatermarkUrl={effectiveWatermarkUrl} layout={selectedLayout} />
          </div>
       </div>
+
+      {/* --- MODAL COMPONENTS --- */}
+      <BatchExport
+        isOpen={showBatchExport}
+        onClose={() => setShowBatchExport(false)}
+        cardRef={cardRef}
+        currentFormat={format}
+        fileName={`KG-${data.templateType}-${format}`}
+      />
+
+      <CaptionGenerator
+        isOpen={showCaptionGenerator}
+        onClose={() => setShowCaptionGenerator(false)}
+        templateType={data.templateType}
+        title={data.title}
+        excerpt={data.excerpt}
+      />
+
+      <PresetSelector
+        isOpen={showPresetSelector}
+        onClose={() => setShowPresetSelector(false)}
+        currentTheme={selectedTheme}
+        onThemeSelect={handleThemeSelect}
+      />
+
+      <MobilePreview
+        isOpen={showMobilePreview}
+        onClose={() => setShowMobilePreview(false)}
+        format={format}
+        data={data}
+        defaultWatermarkUrl={effectiveWatermarkUrl}
+        layout={selectedLayout}
+      />
 
     </main>
   );
