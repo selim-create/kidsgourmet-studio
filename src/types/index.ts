@@ -96,6 +96,18 @@ export interface TemplateData {
   benefits?: string;        // YENİ: Sağlık faydaları
   difficulty?: string;      // YENİ: Tarif zorluk seviyesi
 
+  // Görünürlük Toggle'ları - YENİ
+  visibility?: {
+    ageGroup?: boolean;
+    mealType?: boolean;
+    prepTime?: boolean;
+    ingredients?: boolean;
+    season?: boolean;
+    allergens?: boolean;
+    category?: boolean;
+    excerpt?: boolean;
+  };
+
   // Kişi Bilgileri
   author: {
     name: string;

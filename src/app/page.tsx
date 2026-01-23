@@ -13,11 +13,12 @@ import { toPng } from 'html-to-image';
 import { 
   Download, RefreshCcw, Instagram, Image as ImageIcon, 
   Search, Type, Upload, LogOut, LayoutTemplate, Palette, BookOpen, 
-  ChefHat, FileText, RotateCcw, ImagePlus, Layers
+  ChefHat, FileText, RotateCcw, ImagePlus, Layers, User
 } from 'lucide-react';
 import Link from 'next/link';
 import { STORAGE_KEYS, WATERMARK_POSITIONS, DEFAULTS } from '@/lib/constants';
 import { ALL_TEMPLATES } from '@/lib/templates';
+import { Toggle, ToggleField } from '@/components/ui/Toggle';
 
 
 function HomeContent() {
@@ -213,6 +214,8 @@ function HomeContent() {
           {/* TAB: DÜZENLEME */}
           {activeTab === 'edit' && (
             <div className="space-y-6">
+              
+              {/* Şablon Türü */}
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block ml-1">Şablon Türü</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -233,6 +236,7 @@ function HomeContent() {
                 </div>
               </div>
 
+              {/* Başlık */}
               <InputGroup label="Başlık">
                 <textarea 
                   rows={3} 
@@ -242,39 +246,227 @@ function HomeContent() {
                 />
               </InputGroup>
 
-              <InputGroup label="Kategori">
-                 <input type="text" value={data.category} onChange={e => setData({ category: e.target.value })} className="modern-input"/>
-              </InputGroup>
-
+              {/* CPT'ye Özel Alanlar - Recipe */}
               {data.templateType === 'recipe' && (
-                <InputGroup label="Malzemeler (Virgülle ayırın)">
-                  <textarea 
-                    rows={5}
-                    value={data.ingredients?.join(', ')} 
-                    onChange={e => setData({ ingredients: e.target.value.split(',') })}
-                    className="modern-input"
+                <>
+                  {/* Yaş Grubu Toggle */}
+                  <ToggleField 
+                    label="Yaş Grubu" 
+                    value={data.ageGroup || ''} 
+                    isVisible={data.visibility?.ageGroup ?? true}
+                    onValueChange={(val) => setData({ ageGroup: val })}
+                    onToggle={(visible) => setData({ visibility: { ...data.visibility, ageGroup: visible } })}
+                    placeholder="Örn: 6-9 Ay"
                   />
-                </InputGroup>
+                  
+                  {/* Öğün Tipi Toggle */}
+                  <ToggleField 
+                    label="Öğün Tipi" 
+                    value={data.mealType || ''} 
+                    isVisible={data.visibility?.mealType ?? true}
+                    onValueChange={(val) => setData({ mealType: val })}
+                    onToggle={(visible) => setData({ visibility: { ...data.visibility, mealType: visible } })}
+                    placeholder="Örn: Kahvaltı, Ana Yemek"
+                  />
+                  
+                  {/* Hazırlık Süresi Toggle */}
+                  <ToggleField 
+                    label="Hazırlık Süresi" 
+                    value={data.prepTime || ''} 
+                    isVisible={data.visibility?.prepTime ?? true}
+                    onValueChange={(val) => setData({ prepTime: val })}
+                    onToggle={(visible) => setData({ visibility: { ...data.visibility, prepTime: visible } })}
+                    placeholder="Örn: 15 dk"
+                  />
+                  
+                  {/* Malzemeler Toggle */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Malzemeler</label>
+                      <Toggle 
+                        checked={data.visibility?.ingredients ?? true} 
+                        onChange={(checked) => setData({ visibility: { ...data.visibility, ingredients: checked } })}
+                      />
+                    </div>
+                    {(data.visibility?.ingredients ?? true) && (
+                      <textarea 
+                        rows={4}
+                        value={data.ingredients?.join(', ') || ''} 
+                        onChange={e => setData({ ingredients: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                        className="modern-input"
+                        placeholder="Havuç, Patates, Bezelye..."
+                      />
+                    )}
+                  </div>
+                </>
               )}
 
-              {(data.templateType === 'blog' || data.templateType === 'guide') && (
-                 <InputGroup label="Kısa Özet / İçerik">
-                   <textarea rows={6} value={data.excerpt} onChange={e => setData({ excerpt: e.target.value })} className="modern-input"/>
-                 </InputGroup>
+              {/* CPT'ye Özel Alanlar - Blog */}
+              {data.templateType === 'blog' && (
+                <>
+                  {/* Kategori Toggle */}
+                  <ToggleField 
+                    label="Kategori" 
+                    value={data.category || ''} 
+                    isVisible={data.visibility?.category ?? true}
+                    onValueChange={(val) => setData({ category: val })}
+                    onToggle={(visible) => setData({ visibility: { ...data.visibility, category: visible } })}
+                    placeholder="Örn: Beslenme, Sağlık"
+                  />
+                  
+                  {/* Özet Toggle */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Özet</label>
+                      <Toggle 
+                        checked={data.visibility?.excerpt ?? true} 
+                        onChange={(checked) => setData({ visibility: { ...data.visibility, excerpt: checked } })}
+                      />
+                    </div>
+                    {(data.visibility?.excerpt ?? true) && (
+                      <textarea 
+                        rows={4} 
+                        value={data.excerpt || ''} 
+                        onChange={e => setData({ excerpt: e.target.value })} 
+                        className="modern-input"
+                      />
+                    )}
+                  </div>
+                </>
               )}
 
+              {/* CPT'ye Özel Alanlar - Guide */}
+              {data.templateType === 'guide' && (
+                <>
+                  {/* Mevsim Toggle */}
+                  <ToggleField 
+                    label="Mevsim" 
+                    value={data.season || ''} 
+                    isVisible={data.visibility?.season ?? true}
+                    onValueChange={(val) => setData({ season: val })}
+                    onToggle={(visible) => setData({ visibility: { ...data.visibility, season: visible } })}
+                    placeholder="Örn: Kış, Yaz, Tüm Yıl"
+                  />
+                  
+                  {/* Alerjenler Toggle */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Alerjenler</label>
+                      <Toggle 
+                        checked={data.visibility?.allergens ?? true} 
+                        onChange={(checked) => setData({ visibility: { ...data.visibility, allergens: checked } })}
+                      />
+                    </div>
+                    {(data.visibility?.allergens ?? true) && (
+                      <input 
+                        type="text"
+                        value={data.allergens?.join(', ') || ''} 
+                        onChange={e => setData({ allergens: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                        className="modern-input"
+                        placeholder="Süt, Yumurta, Gluten..."
+                      />
+                    )}
+                  </div>
+                  
+                  {/* Özet */}
+                  <InputGroup label="Açıklama">
+                    <textarea 
+                      rows={4} 
+                      value={data.excerpt || ''} 
+                      onChange={e => setData({ excerpt: e.target.value })} 
+                      className="modern-input"
+                    />
+                  </InputGroup>
+                </>
+              )}
+
+              {/* Yazar Kartı - Tüm CPT'ler için */}
               <div className="pt-6 border-t border-white/10">
                 <div className="flex justify-between items-center mb-3">
-                   <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2"><ChefHat size={14}/> Uzman / Şef Kartı</span>
-                   <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" checked={data.expert.isVisible} onChange={e => setData({ expert: { ...data.expert, isVisible: e.target.checked } })} />
-                      <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF7F3F]"></div>
-                   </label>
+                  <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2">
+                    <User size={14}/> Yazar Bilgisi
+                  </span>
+                  <Toggle 
+                    checked={data.author.isVisible} 
+                    onChange={(checked) => setData({ author: { ...data.author, isVisible: checked } })}
+                  />
+                </div>
+                {data.author.isVisible && (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3">
+                      {data.author.avatarUrl ? (
+                        <img src={data.author.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-[#FF7F3F]" />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center">
+                          <User size={20} className="text-gray-400" />
+                        </div>
+                      )}
+                      <input 
+                        type="text" 
+                        placeholder="Yazar Adı" 
+                        value={data.author.name} 
+                        onChange={e => setData({ author: { ...data.author, name: e.target.value } })} 
+                        className="modern-input flex-1"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Uzman Kartı - Tüm CPT'ler için */}
+              <div className="pt-6 border-t border-white/10">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2">
+                    <ChefHat size={14}/> Uzman Bilgisi
+                  </span>
+                  <Toggle 
+                    checked={data.expert.isVisible} 
+                    onChange={(checked) => setData({ expert: { ...data.expert, isVisible: checked } })}
+                  />
                 </div>
                 {data.expert.isVisible && (
-                  <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2">
-                    <input type="text" placeholder="Ad Soyad" value={data.expert.name} onChange={e => setData({ expert: { ...data.expert, name: e.target.value } })} className="modern-input"/>
-                    <input type="text" placeholder="Ünvan" value={data.expert.title} onChange={e => setData({ expert: { ...data.expert, title: e.target.value } })} className="modern-input"/>
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3">
+                      {data.expert.avatarUrl ? (
+                        <img src={data.expert.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-green-500" />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center">
+                          <ChefHat size={20} className="text-gray-400" />
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-2">
+                        <input 
+                          type="text" 
+                          placeholder="Uzman Adı" 
+                          value={data.expert.name} 
+                          onChange={e => setData({ expert: { ...data.expert, name: e.target.value } })} 
+                          className="modern-input"
+                        />
+                        <input 
+                          type="text" 
+                          placeholder="Ünvan" 
+                          value={data.expert.title} 
+                          onChange={e => setData({ expert: { ...data.expert, title: e.target.value } })} 
+                          className="modern-input"
+                        />
+                      </div>
+                    </div>
+                    <textarea 
+                      rows={2} 
+                      placeholder="Uzman Notu (opsiyonel)" 
+                      value={data.expert.note || ''} 
+                      onChange={e => setData({ expert: { ...data.expert, note: e.target.value } })} 
+                      className="modern-input"
+                    />
+                    <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={data.expert.isVerified} 
+                        onChange={e => setData({ expert: { ...data.expert, isVerified: e.target.checked } })}
+                        className="accent-green-500"
+                      />
+                      Onaylı Uzman Rozeti Göster
+                    </label>
                   </div>
                 )}
               </div>
