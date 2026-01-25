@@ -9,7 +9,7 @@ import { saveAs } from 'file-saver';
 interface BatchExportProps {
   isOpen: boolean;
   onClose: () => void;
-  cardRef: React.RefObject<HTMLDivElement>;
+  cardRef: React.RefObject<HTMLDivElement | null>; // <- "| null" eklendi
   fileName: string;
 }
 
